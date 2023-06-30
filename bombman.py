@@ -97,7 +97,7 @@ import math
 import copy
 import random
 import re
-import time
+# import time
 
 DEBUG_PROFILING = False
 DEBUG_FPS = False
@@ -126,13 +126,10 @@ class Profiler:
 
     Attributes
     ----------
-    SHOW_LAST : int
-        Show last X things
-
     sections : dict[str, list[float]]
         In which sections it runs
     """
-    SHOW_LAST: int = 10
+    SHOW_LAST = 10
 
     def __init__(self):
         self.sections = {}
@@ -258,9 +255,9 @@ class MapTile:
         self.special_object = None  ##< special object present on the tile, like trampoline or teleport
         self.destination_teleport = None  ##< in case of special_object equal to SPECIAL_OBJECT_TELEPORT_A or SPECIAL_OBJECT_TELEPORT_B holds the destionation teleport tile coordinates
 
-    def shouldnt_walk(self) -> bool:
-        return self.kind in [MapTile.TILE_WALL, MapTile.TILE_BLOCK]\
-               or len(self.flames) >= 1\
+    def should_not_walk(self) -> bool:
+        return self.kind in [MapTile.TILE_WALL, MapTile.TILE_BLOCK] \
+               or len(self.flames) >= 1 \
                or self.special_object == MapTile.SPECIAL_OBJECT_LAVA
 
 
@@ -359,7 +356,7 @@ class GameMap:
         list of currently happening sound event (see SoundPlayer class)
     animation_events : list[tuple[int, tuple[int, int]]]
         list of animation events, tuples in format (animation_event, coordinates)
-    items_to_give_away : list[]
+    items_to_give_away : list[tuple[int, tuple[int, int]]]
         list of tuples in format (time_of_giveaway, list_of_items)
     create_disease_cloud_at : int
         at what time (in ms) the disease clouds should be released
@@ -664,8 +661,10 @@ class GameMap:
 
     def update_danger_map(self):
         # reset the map:
-        self.danger_map = [map(lambda tile: 0 if tile.shouldnt_walk() else GameMap.SAFE_DANGER_VALUE, tile_row) for
-                           tile_row in self.tiles]
+        self.danger_map = [map(lambda tile:
+                               0 if tile.should_not_walk() else GameMap.SAFE_DANGER_VALUE, tile_row)
+                           for tile_row in self.tiles
+                           ]
 
         for bomb in self.bombs:
             bomb_tile = bomb.get_tile_position()
@@ -1094,15 +1093,23 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def spread_items(self, items):
+    def spread_items(self, items: list):
+        """
+
+        Parameters
+        ----------
+        items : list[int]
+        """
         possible_tiles = []
 
         for y in range(GameMap.MAP_HEIGHT):
             for x in range(GameMap.MAP_WIDTH):
                 tile = self.tiles[y][x]
 
-                if tile.kind == MapTile.TILE_FLOOR and tile.special_object is None and tile.item is None and not self.tile_has_player(
-                        (x, y)):
+                if tile.kind == MapTile.TILE_FLOOR \
+                        and tile.special_object is None \
+                        and tile.item is None \
+                        and not self.tile_has_player((x, y)):
                     possible_tiles.append(tile)
 
         for item in items:
@@ -1116,7 +1123,13 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def __update_bombs(self, dt):
+    def __update_bombs(self, dt: int):
+        """
+
+        Parameters
+        ----------
+        dt : int
+        """
         i = 0
 
         while i < len(self.bombs):  # update all bombs
@@ -1242,7 +1255,14 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def __update_players(self, dt, immortal_player_numbers):
+    def __update_players(self, dt: int, immortal_player_numbers: list):
+        """
+
+        Parameters
+        ----------
+        dt : int
+        immortal_player_numbers : list[int]
+        """
         time_now = pygame.time.get_ticks()
         release_disease_cloud = False
 
@@ -1312,9 +1332,15 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    ## Updates some things on the map that change with time.
+    def update(self, dt: int, immortal_player_numbers=[]):
+        """
+        Updates some things on the map that change with time.
 
-    def update(self, dt, immortal_player_numbers=[]):
+        Parameters
+        ----------
+        dt : int
+        immortal_player_numbers : list[int]
+        """
         self.time_from_start += dt
 
         self.danger_map_is_up_to_date = False  # reset this each frame
@@ -1393,44 +1419,67 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def get_winner_team(self):
+    def get_winner_team(self) -> int:
         return self.winner_team
 
     # ----------------------------------------------------------------------------
 
-    def get_state(self):
+    def get_state(self) -> int:
         return self.state
 
     # ----------------------------------------------------------------------------
 
     def add_bomb(self, bomb):
+        """
+
+        Parameters
+        ----------
+        bomb : Bomb
+        """
         self.bombs.append(bomb)
 
     # ----------------------------------------------------------------------------
 
-    def get_bombs(self):
+    def get_bombs(self) -> list:
         return self.bombs
 
     # ----------------------------------------------------------------------------
 
-    def get_environment_name(self):
+    def get_environment_name(self) -> str:
         return self.environment_name
 
     # ----------------------------------------------------------------------------
 
-    def get_players(self):
+    def get_players(self) -> list:
+        """
+
+        Return
+        ------
+        list[Player]
+        """
         return self.players
 
     # ----------------------------------------------------------------------------
 
-    ## Gets a dict that maps numbers to players (with Nones if player with given number doesn't exist).
+    def get_players_by_numbers(self) -> dict:
+        """
+        Gets a dict that maps numbers to players (with Nones if player with given number doesn't exist).
 
-    def get_players_by_numbers(self):
+        Return
+        ------
+        dict[int, Player]
+        """
         return self.players_by_numbers
 
     # ----------------------------------------------------------------------------
 
-    def get_tiles(self):
+    def get_tiles(self) -> list:
+        """
+
+        Return
+        ------
+        list[list[MapTile]]
+        """
         return self.tiles
 
     # ----------------------------------------------------------------------------
@@ -1737,18 +1786,18 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def is_walking(self):
+    def is_walking(self) -> bool:
         return self.state in [Player.STATE_WALKING_UP, Player.STATE_WALKING_RIGHT, Player.STATE_WALKING_DOWN,
                               Player.STATE_WALKING_LEFT]
 
     # ----------------------------------------------------------------------------
 
-    def is_boxing(self):
+    def is_boxing(self) -> bool:
         return self.boxing
 
     # ----------------------------------------------------------------------------
 
-    def detonator_is_active(self):
+    def detonator_is_active(self) -> bool:
         """
         Checks if there are any bombs waiting to be detonated with detonator by the player.
         """
@@ -1756,7 +1805,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def kill(self, game_map):
+    def kill(self, game_map: GameMap):
         if self.invincible:
             return
 
@@ -1777,6 +1826,16 @@ class Player(Positionable):
     # ----------------------------------------------------------------------------
 
     def is_enemy(self, another_player) -> bool:
+        """
+
+        Parameters
+        ----------
+        another_player : Player
+
+        Return
+        ----------
+        bool
+        """
         return self.team_number != another_player.get_team_number()
 
     # ----------------------------------------------------------------------------
@@ -1848,17 +1907,17 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def get_items(self):
+    def get_items(self) -> tuple:
         result = []
 
         for item in self.items:
             result += [item for i in range(self.items[item])]
 
-        return result
+        return tuple(result)
 
     # ----------------------------------------------------------------------------
 
-    def send_to_air(self, game_map):
+    def send_to_air(self, game_map: GameMap):
         if self.state == Player.STATE_IN_AIR:
             return
 
@@ -1893,42 +1952,54 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def get_teleport_destination(self):
+    def get_teleport_destination(self) -> tuple:
+        """
+
+        Return
+        ----------
+        tuple[int, int]
+        """
         return self.teleporting_to
 
     # ----------------------------------------------------------------------------
 
-    def get_jump_destination(self):
+    def get_jump_destination(self) -> tuple:
+        """
+
+        Return
+        ----------
+        tuple[int, int]
+        """
         return self.jumping_to
 
     # ----------------------------------------------------------------------------
 
-    def is_teleporting(self):
+    def is_teleporting(self) -> bool:
         return self.state == Player.STATE_TELEPORTING
 
     # ----------------------------------------------------------------------------
 
-    def is_in_air(self):
+    def is_in_air(self) -> bool:
         return self.state == Player.STATE_IN_AIR
 
     # ----------------------------------------------------------------------------
 
-    def is_throwing(self):
+    def is_throwing(self) -> bool:
         return self.throwing_time_left > 0
 
     # ----------------------------------------------------------------------------
 
-    def can_box(self):
+    def can_box(self) -> bool:
         return self.has_boxing_glove
 
     # ----------------------------------------------------------------------------
 
-    def can_throw(self):
+    def can_throw(self) -> bool:
         return self.has_throwing_glove
 
     # ----------------------------------------------------------------------------
 
-    def get_item_count(self, item):
+    def get_item_count(self, item: int) -> int:
         if item not in self.items:
             return 0
 
@@ -1936,7 +2007,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def give_item(self, item: int, game_map: GameMap=None):
+    def give_item(self, item: int, game_map: GameMap = None):
         """
         Gives player an item with given code (see GameMap class constants). game_map is needed so that sounds can be
         made on item pickup - if no map is provided, no sounds will be generated.
@@ -2027,7 +2098,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def lay_bomb(self, game_map: GameMap, tile_coordinates: tuple=None):
+    def lay_bomb(self, game_map: GameMap, tile_coordinates: tuple = None):
         """
 
         Parameters
@@ -2176,7 +2247,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def __manage_input_actions(self, input_actions, game_map: GameMap, distance_to_travel: float):
+    def __manage_input_actions(self, input_actions: list, game_map: GameMap, distance_to_travel: float):
         """
 
         Parameters
@@ -2649,34 +2720,58 @@ class StringSerializable:
 
     # ----------------------------------------------------------------------------
 
-    def save_to_string(self):
+    def save_to_string(self) -> str:
         return ""
 
     # ----------------------------------------------------------------------------
 
-    def load_from_string(self, input_string):
+    def load_from_string(self, input_string: str):
         return
 
     # ----------------------------------------------------------------------------
 
-    def save_to_file(self, filename):
+    def save_to_file(self, filename: str):
         text_file = open(filename, "w")
         text_file.write(self.save_to_string())
         text_file.close()
 
     # ----------------------------------------------------------------------------
 
-    def load_from_file(self, filename):
+    def load_from_file(self, filename: str):
         with open(filename, "r") as text_file:
             self.load_from_string(text_file.read())
 
 
 # ==============================================================================
 
-## Handles conversion of keyboard events to actions of players, plus general
-#  actions (such as menu, ...). Also managed some more complex input processing.
 
 class PlayerKeyMaps(StringSerializable):
+    """
+    Handles conversion of keyboard events to actions of players, plus general actions (such as menu, ...).
+    Also managed some more complex input processing.
+
+    Attributes
+    ----------
+    key_maps : dict[tuple[int, int]]
+        maps keys to tuples of a format: (player_number, action), for general actions player_number will be -1
+    bomb_key_last_pressed_time : list[int]
+        for bomb double press detection
+    bomb_key_previous_state : list[bool]
+        for bomb double press detection
+    allow_mouse_control : bool
+        if true, player movement by mouse is allowed, otherwise not
+    mouse_control_states : dict[int, bool]
+    mouse_control_keep_until : dict[int, int]
+        time in which specified control was activated, helps keeping them active for a certain amount of time to smooth them out
+    mouse_button_states : list[bool]
+        (left, right, middle, wheel up, wheel down)
+    previous_mouse_button_states : list[bool]
+    last_mouse_update_frame : int
+    name_code_mapping : dict[int, int]
+        holds a mapping of key names to pygame key codes, since pygame itself offers no such functionality
+    typed_string_buffer : list[str]
+    """
+
     ACTION_UP = 0
     ACTION_RIGHT = 1
     ACTION_DOWN = 2
@@ -2781,18 +2876,28 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    ## Returns a state of mouse buttons including mouse wheel (unlike pygame.mouse.get_pressed) as
-    #  a tuple (left, right, middle, wheel up, wheel down).
+    def get_mouse_button_states(self) -> list:
+        """
+        Returns a state of mouse buttons including mouse wheel (unlike pygame.mouse.get_pressed) as a list
+        (left, right, middle, wheel up, wheel down).
 
-    def get_mouse_button_states(self):
+        Return
+        ----------
+        list[int]
+        """
         return self.mouse_button_states
 
     # ----------------------------------------------------------------------------
 
-    ## Returns a tuple corresponding to mouse buttons (same as get_mouse_button_states) where each
-    #  item says if the button has been pressed since the last frame.
+    def get_mouse_button_events(self) -> list:
+        """
+        Returns a tuple corresponding to mouse buttons (same as get_mouse_button_states) where each item says if
+        the button has been pressed since the last frame.
 
-    def get_mouse_button_events(self):
+        Return
+        ----------
+        list[bool]
+        """
         result = []
 
         for i in range(5):
@@ -2802,9 +2907,15 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    ## This informs the object abour pygame events so it can keep track of some input states.
+    def process_pygame_events(self, pygame_events: list, frame_number: int):
+        """
+        This informs the object abour pygame events so it can keep track of some input states.
 
-    def process_pygame_events(self, pygame_events, frame_number):
+        Parameters
+        ----------
+        pygame_events : list[pygame.Event]
+        frame_number : int
+        """
         if frame_number != self.last_mouse_update_frame:
             # first time calling this function this frame => reset states
 
@@ -2840,7 +2951,7 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    def string_was_typed(self, string):
+    def string_was_typed(self, string: str) -> bool:
         return str.find("".join(self.typed_string_buffer), string) >= 0
 
     # ----------------------------------------------------------------------------
@@ -2858,10 +2969,19 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    ##< Gets a direction of given action (0 - up, 1 - right, 2 - down, 3 - left).
-
     @staticmethod
-    def get_action_direction_number(action):
+    def get_action_direction_number(action: int) -> int:
+        """
+        Gets a direction of given action (0 - up, 1 - right, 2 - down, 3 - left).
+
+        Parameters
+        ----------
+        action : int
+
+        Return
+        ----------
+        int
+        """
         if action == PlayerKeyMaps.ACTION_UP:
             return 0
         elif action == PlayerKeyMaps.ACTION_RIGHT:
@@ -2891,7 +3011,7 @@ class PlayerKeyMaps(StringSerializable):
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def key_to_string(key):
+    def key_to_string(key: int or None) -> str:
         if key is None:
             return "none"
 
@@ -2907,7 +3027,7 @@ class PlayerKeyMaps(StringSerializable):
 
         # ----------------------------------------------------------------------------
 
-    def set_one_key_map(self, key, player_number, action):
+    def set_one_key_map(self, key: int, player_number: int, action: int):
         if key is not None:
             self.key_maps[key] = (player_number, action)
 
@@ -2922,9 +3042,20 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    ## Sets a key mapping for a player of specified (non-negative) number.
+    def set_player_key_map(self, player_number: int, key_up: int, key_right: int, key_down: int, key_left: int, key_bomb: int, key_special: int):
+        """
+        Sets a key mapping for a player of specified (non-negative) number.
 
-    def set_player_key_map(self, player_number, key_up, key_right, key_down, key_left, key_bomb, key_special):
+        Parameters
+        ----------
+        player_number : int
+        key_up : int
+        key_right : int
+        key_down : int
+        key_left : int
+        key_bomb : int
+        key_special : int
+        """
         self.set_one_key_map(key_up, player_number, PlayerKeyMaps.ACTION_UP)
         self.set_one_key_map(key_right, player_number, PlayerKeyMaps.ACTION_RIGHT)
         self.set_one_key_map(key_down, player_number, PlayerKeyMaps.ACTION_DOWN)
@@ -2934,10 +3065,19 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    ## Gets a dict that says how keys are mapped for a specific player. Format: {action_code : key_code, ...}, the
-    #  dict will contain all actions and possibly None values for unmapped actions.
+    def get_players_key_mapping(self, player_number: int) -> dict:
+        """
+        Gets a dict that says how keys are mapped for a specific player. Format: {action_code : key_code, ...},
+        the dict will contain all actions and possibly None values for unmapped actions.
 
-    def get_players_key_mapping(self, player_number):
+        Parameters
+        ----------
+        player_number : int
+
+        Return
+        ------
+        dict[int, int or None]
+        """
         result = {action: None for action in (
             PlayerKeyMaps.ACTION_UP,
             PlayerKeyMaps.ACTION_RIGHT,
@@ -2954,19 +3094,24 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    def allow_control_by_mouse(self, allow=True):
+    def allow_control_by_mouse(self, allow: bool = True):
         self.allow_mouse_control = allow
 
     # ----------------------------------------------------------------------------
 
-    def set_special_key_map(self, key_menu):
+    def set_special_key_map(self, key_menu: int):
         self.set_one_key_map(key_menu, -1, PlayerKeyMaps.ACTION_MENU)
 
     # ----------------------------------------------------------------------------
 
-    ## Makes a human-readable string that represents the current key-mapping.
+    def save_to_string(self) -> str:
+        """
+        Makes a human-readable string that represents the current key-mapping.
 
-    def save_to_string(self):
+        Return
+        ------
+        str
+        """
         result = ""
 
         for i in range(Game.NUMBER_OF_CONTROLLED_PLAYERS):  # 4 players
@@ -2981,9 +3126,14 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    ## Loads the mapping from string produced by save_to_string(...).
+    def load_from_string(self, input_string: str):
+        """
+        Loads the mapping from string produced by save_to_string(...).
 
-    def load_from_string(self, input_string):
+        Parameters
+        ----------
+        input_string : str
+        """
         self.key_maps = {}
 
         lines = input_string.split("\n")
@@ -3013,7 +3163,7 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    def get_menu_key_map(self):
+    def get_menu_key_map(self) -> int or None:
         for key in self.key_maps:
             if self.key_maps[key][0] == -1:
                 return key
@@ -3022,10 +3172,15 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    ## Returns a list of mouse control actions currently being performed (if mouse
-    #  control is not allowed, the list will always be empty)
+    def get_current_mouse_control_states(self) -> list:
+        """
+        Returns a list of mouse control actions currently being performed (if mouse control is not allowed,
+        the list will always be empty)
 
-    def get_current_mouse_control_states(self):
+        Return
+        ------
+        list[int]
+        """
         result = []
 
         if not self.allow_mouse_control:
@@ -3039,10 +3194,15 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    ## From currently pressed keys makes a list of actions being currently performed and
-    #  returns it, format: (player_number, action).
+    def get_current_actions(self) -> list:
+        """
+        From currently pressed keys makes a list of actions being currently performed and returns it,
+        format: (player_number, action).
 
-    def get_current_actions(self):
+        Return
+        ------
+        list[tuple[int, int]]
+        """
         keys_pressed = pygame.key.get_pressed()
 
         result = []
@@ -4410,17 +4570,18 @@ class Renderer:
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def lighten_color(color, by_how_may):
+    def lighten_color(color, by_how_may) -> tuple:
         r = min(color[0] + by_how_may, 255)
         g = min(color[1] + by_how_may, 255)
         b = min(color[2] + by_how_may, 255)
-        return (r, g, b)
+        return r, g, b
 
     # ----------------------------------------------------------------------------
 
     def __render_info_board_item_row(self, x, y, limit, item_type, player, board_image):
-        item_count = 20 if item_type == GameMap.ITEM_FLAME and player.get_item_count(
-            GameMap.ITEM_SUPERFLAME) >= 1 else player.get_item_count(item_type)
+        item_count = 20 if item_type == GameMap.ITEM_FLAME \
+            and player.get_item_count(GameMap.ITEM_SUPERFLAME) >= 1 \
+            else player.get_item_count(item_type)
 
         for i in range(item_count):
             if i > limit:
@@ -4500,8 +4661,8 @@ class Renderer:
                 GameMap.ITEM_DISEASE]
 
             for item in items_to_check:
-                if player.get_item_count(
-                        item) or item == GameMap.ITEM_DISEASE and player.get_disease() != Player.DISEASE_NONE:
+                if player.get_item_count(item) \
+                        or (item == GameMap.ITEM_DISEASE and player.get_disease() != Player.DISEASE_NONE):
                     board_image.blit(self.icon_images[item], (x, y))
                     x += self.icon_images[item].get_size()[0] + 1
 
@@ -5694,7 +5855,7 @@ class Settings(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    def save_to_string(self):
+    def save_to_string(self) -> str:
         result = ""
 
         result += "sound volume: " + str(self.sound_volume) + "\n"
@@ -5712,7 +5873,7 @@ class Settings(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    def load_from_string(self, input_string):
+    def load_from_string(self, input_string: str):
         self.reset()
 
         helper_position = input_string.find(Settings.CONTROL_MAPPING_DELIMITER)
@@ -5754,12 +5915,12 @@ class Settings(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    def sound_is_on(self):
+    def sound_is_on(self) -> bool:
         return self.sound_volume > Settings.SOUND_VOLUME_THRESHOLD
 
     # ----------------------------------------------------------------------------
 
-    def music_is_on(self):
+    def music_is_on(self) -> bool:
         return self.music_volume > Settings.SOUND_VOLUME_THRESHOLD
 
     # ----------------------------------------------------------------------------
@@ -6215,7 +6376,13 @@ class Game(object):
 
     # ----------------------------------------------------------------------------
 
-    def simulation_step(self, dt):
+    def simulation_step(self, dt: int):
+        """
+
+        Parameters
+        ----------
+        dt : int
+        """
         actions_being_performed = self.filter_out_disallowed_actions(self.player_key_maps.get_current_actions())
 
         for action in actions_being_performed:
