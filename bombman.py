@@ -270,7 +270,7 @@ class PlaySetup:
 
     Attributes
     ----------
-    player_slots : list[tuple[int, int]]
+    player_slots : list[tuple[int, int] or None]
         list of (player_number, team_color),
         negative player_number = AI, slot index ~ player color index
     """
@@ -300,17 +300,17 @@ class PlaySetup:
 
     # ----------------------------------------------------------------------------
 
-    def set_number_of_games(self, number_of_games: int):
+    def set_number_of_games(self, number_of_games: int) -> None:
         self.number_of_games = number_of_games
 
     # ----------------------------------------------------------------------------
 
-    def increase_number_of_games(self):
+    def increase_number_of_games(self) -> None:
         self.number_of_games = self.number_of_games % PlaySetup.MAX_GAMES + 1
 
     # ----------------------------------------------------------------------------
 
-    def decrease_number_of_games(self):
+    def decrease_number_of_games(self) -> None:
         self.number_of_games = (self.number_of_games - 2) % PlaySetup.MAX_GAMES + 1
 
 
@@ -344,10 +344,10 @@ class GameMap:
         time in ms from the start of the map, the time increases with each update (so time spent in game menu is excluded)
     number_of_blocks : int
         says how many block tiles there are currently on the map
-    danger_map: list[tuple[int, int]]
+    danger_map: list[list[int]]
     players : list[Player]
         list of players in the game
-    players_by_numbers : dict[int, Player]
+    players_by_numbers : dict[int, Player or None]
         mapping of numbers to players
     player_starting_items : list[int]
     bombs : list[Bomb]
@@ -522,8 +522,9 @@ class GameMap:
 
         # init danger map:
 
-        self.danger_map = [[GameMap.SAFE_DANGER_VALUE for i in range(GameMap.MAP_WIDTH)] for j in
-                           range(GameMap.MAP_HEIGHT)]  ##< 2D array of times in ms for each square that
+        #  2D array of times in ms for each square that
+        danger_row = [GameMap.SAFE_DANGER_VALUE for i in range(GameMap.MAP_WIDTH)]
+        self.danger_map = [danger_row for i in range(GameMap.MAP_HEIGHT)]
 
         # initialise players:
 
@@ -589,17 +590,17 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def start_earthquake(self):
+    def start_earthquake(self) -> None:
         self.earthquake_time_left = GameMap.EARTHQUAKE_DURATION
 
     # ----------------------------------------------------------------------------
 
-    def earthquake_is_active(self):
+    def earthquake_is_active(self) -> bool:
         return self.earthquake_time_left > 0
 
     # ----------------------------------------------------------------------------
 
-    def get_number_of_block_tiles(self):
+    def get_number_of_block_tiles(self) -> int:
         return self.number_of_blocks
 
     # ----------------------------------------------------------------------------
@@ -646,7 +647,7 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def give_away_items(self, items):
+    def give_away_items(self, items) -> None:
         """
         Gives away a set of given items (typically after a player dies). The items are spread randomly on the map
         floor tiles after a while.
@@ -659,12 +660,9 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def update_danger_map(self):
+    def update_danger_map(self) -> None:
         # reset the map:
-        self.danger_map = [map(lambda tile:
-                               0 if tile.should_not_walk() else GameMap.SAFE_DANGER_VALUE, tile_row)
-                           for tile_row in self.tiles
-                           ]
+        self.danger_map = self._update_danger_entry()
 
         for bomb in self.bombs:
             bomb_tile = bomb.get_tile_position()
@@ -674,8 +672,7 @@ class GameMap:
             if bomb.has_detonator():  # detonator = bad
                 time_until_explosion = 100
 
-            self.danger_map[bomb_tile[1]][bomb_tile[0]] = min(self.danger_map[bomb_tile[1]][bomb_tile[0]],
-                                                              time_until_explosion)
+            self.danger_map[bomb_tile[1]][bomb_tile[0]] = min(self.danger_map[bomb_tile[1]][bomb_tile[0]], time_until_explosion)
 
             # up                              right                            down                             left
             position = [[bomb_tile[0], bomb_tile[1] - 1], [bomb_tile[0] + 1, bomb_tile[1]],
@@ -699,14 +696,20 @@ class GameMap:
                     position[direction][0] += tile_increment[direction][0]
                     position[direction][1] += tile_increment[direction][1]
 
+    def _update_danger_entry(self) -> list:
+        allow = []
+        for tile_row in self.tiles:
+            allow.append(list(map(lambda tile: 0 if tile.should_not_walk() else GameMap.SAFE_DANGER_VALUE, tile_row)))
+        return allow
+
     # ----------------------------------------------------------------------------
 
-    def add_sound_event(self, sound_event: int):
+    def add_sound_event(self, sound_event: int) -> None:
         self.sound_events.append(sound_event)
 
     # ----------------------------------------------------------------------------
 
-    def add_animation_event(self, animation_event: int, coordinates: tuple):
+    def add_animation_event(self, animation_event: int, coordinates: tuple) -> None:
         """
 
         Parameters
@@ -751,6 +754,7 @@ class GameMap:
 
     def get_and_clear_animation_events(self) -> list:
         """
+        Get prepared animations and clear list of them
 
         Return
         ------
@@ -1020,7 +1024,7 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def bomb_explodes(self, bomb):
+    def bomb_explodes(self, bomb) -> None:
         """
         Tells the map that given bomb is exploding, the map then creates flames from the bomb, the bomb is destroyed
         and players are informed.
@@ -1093,7 +1097,7 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def spread_items(self, items: list):
+    def spread_items(self, items: list) -> None:
         """
 
         Parameters
@@ -1123,7 +1127,7 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def __update_bombs(self, dt: int):
+    def __update_bombs(self, dt: int) -> None:
         """
 
         Parameters
@@ -1255,7 +1259,7 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def __update_players(self, dt: int, immortal_player_numbers: list):
+    def __update_players(self, dt: int, immortal_player_numbers: list) -> None:
         """
 
         Parameters
@@ -1332,7 +1336,7 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def update(self, dt: int, immortal_player_numbers=[]):
+    def update(self, dt: int, immortal_player_numbers=[]) -> None:
         """
         Updates some things on the map that change with time.
 
@@ -1429,7 +1433,7 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def add_bomb(self, bomb):
+    def add_bomb(self, bomb) -> None:
         """
 
         Parameters
@@ -1520,7 +1524,7 @@ class Positionable:
         self.y = 0.0
         self.position = (0.0, 0.0)
 
-    def set_position(self, position: tuple):
+    def set_position(self, position: tuple) -> None:
         """
         Set position
 
@@ -1568,7 +1572,7 @@ class Positionable:
         """
         return Positionable.position_to_tile(self.position)
 
-    def move_to_tile_center(self, tile_coordinates:tuple = None):
+    def move_to_tile_center(self, tile_coordinates:tuple = None) -> None:
         """
         Moves the object to center of tile (if not specified, objects current tile is used).
 
@@ -1656,6 +1660,8 @@ class Player(Positionable):
         for how longer (in ms) the player will be in a state of throwing (only for visuals)
     state_backup : int
         used to restore previous state, for example after jump
+    jumping_from : tuple[int, int]
+        coordinates of a tile the player is jumping from
     jumping_to : tuple[int, int]
         coordinates of a tile the player is jumping to
     teleporting_to : tuple[int, int]
@@ -1726,6 +1732,7 @@ class Player(Positionable):
         self.wait_for_bomb_release = False
         self.throwing_time_left = 0  ##< for how longer (in ms) the player will be in a state of throwing (only for visuals)
         self.state_backup = Player.STATE_IDLE_UP  ##< used to restore previous state, for example after jump
+        self.jumping_from = (0, 0)  ##< coordinates of a tile the player is jumping from
         self.jumping_to = (0, 0)  ##< coordinates of a tile the player is jumping to
         self.teleporting_to = (0, 0)
         self.wait_for_tile_transition = False  ##< used to stop the destination teleport from teleporting the player back immediatelly
@@ -1744,7 +1751,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def set_kills(self, kills: int):
+    def set_kills(self, kills: int) -> None:
         self.kills = kills
         self.info_board_update_needed = True
 
@@ -1755,7 +1762,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def set_wins(self, wins: int):
+    def set_wins(self, wins: int) -> None:
         self.wins = wins
         self.info_board_update_needed = True
 
@@ -1770,7 +1777,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def wait_for_bomb_action_release(self):
+    def wait_for_bomb_action_release(self) -> None:
         """
         Makes the player not react to bomb key immediatelly, but only after it been released and pressed again.
         """
@@ -1778,7 +1785,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def wait_for_special_action_release(self):
+    def wait_for_special_action_release(self) -> None:
         """
         Makes the player not react to special key immediatelly, but only after it has been released and pressed again.
         """
@@ -1805,7 +1812,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def kill(self, game_map: GameMap):
+    def kill(self, game_map: GameMap) -> None:
         if self.invincible:
             return
 
@@ -1877,7 +1884,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def teleport(self, game_map: GameMap):
+    def teleport(self, game_map: GameMap) -> None:
         """
         Initialises the teleporting of the player with teleport they are standing on (if they're not standing
         on a teleport, nothing happens).
@@ -1917,7 +1924,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def send_to_air(self, game_map: GameMap):
+    def send_to_air(self, game_map: GameMap) -> None:
         if self.state == Player.STATE_IN_AIR:
             return
 
@@ -2007,7 +2014,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def give_item(self, item: int, game_map: GameMap = None):
+    def give_item(self, item: int, game_map: GameMap = None) -> None:
         """
         Gives player an item with given code (see GameMap class constants). game_map is needed so that sounds can be
         made on item pickup - if no map is provided, no sounds will be generated.
@@ -2073,7 +2080,7 @@ class Player(Positionable):
 
             if chosen_disease[0] == Player.DISEASE_SWITCH_PLAYERS:
                 if game_map is not None:
-                    players = filter(lambda p: not p.is_dead(), game_map.get_players())
+                    players = list(filter(lambda p: not p.is_dead(), game_map.get_players()))
 
                     player_to_switch = self
 
@@ -2098,7 +2105,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def lay_bomb(self, game_map: GameMap, tile_coordinates: tuple = None):
+    def lay_bomb(self, game_map: GameMap, tile_coordinates: tuple = None) -> None:
         """
 
         Parameters
@@ -2178,17 +2185,17 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def set_number(self, number: int):
+    def set_number(self, number: int) -> None:
         self.number = number
 
     # ----------------------------------------------------------------------------
 
-    def set_team_number(self, number: int):
+    def set_team_number(self, number: int) -> None:
         self.team_number = number
 
     # ----------------------------------------------------------------------------
 
-    def bomb_exploded(self):
+    def bomb_exploded(self) -> None:
         """
         Must be called when this player's bomb explodes so that their bomb limit is increased again.
         """
@@ -2247,7 +2254,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def __manage_input_actions(self, input_actions: list, game_map: GameMap, distance_to_travel: float):
+    def __manage_input_actions(self, input_actions: list, game_map: GameMap, distance_to_travel: float) -> None:
         """
 
         Parameters
@@ -2331,7 +2338,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def __manage_kick_box(self, game_map: GameMap, collision_happened: bool):
+    def __manage_kick_box(self, game_map: GameMap, collision_happened: bool) -> None:
         """
 
         Parameters
@@ -2424,7 +2431,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def react_to_inputs(self, input_actions: list, dt: int, game_map: GameMap):
+    def react_to_inputs(self, input_actions: list, dt: int, game_map: GameMap) -> None:
         """
         Sets the state and other attributes like position etc. of this player accoording to a list of input action
         (returned by PlayerKeyMaps.get_current_actions()).
@@ -2638,7 +2645,7 @@ class Bomb(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def send_flying(self, destination_tile_coords: tuple):
+    def send_flying(self, destination_tile_coords: tuple) -> None:
         """
         Sends the bomb flying from its currents position to given tile (can be outside the map boundaries, will fly over the border from the other side).
 
@@ -2680,7 +2687,7 @@ class Bomb(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def explodes(self):
+    def explodes(self) -> None:
         if not self.has_exploded:
             self.player.bomb_exploded()
             self.has_exploded = True
@@ -2730,14 +2737,14 @@ class StringSerializable:
 
     # ----------------------------------------------------------------------------
 
-    def save_to_file(self, filename: str):
+    def save_to_file(self, filename: str) -> None:
         text_file = open(filename, "w")
         text_file.write(self.save_to_string())
         text_file.close()
 
     # ----------------------------------------------------------------------------
 
-    def load_from_file(self, filename: str):
+    def load_from_file(self, filename: str) -> None:
         with open(filename, "r") as text_file:
             self.load_from_string(text_file.read())
 
@@ -2907,7 +2914,7 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    def process_pygame_events(self, pygame_events: list, frame_number: int):
+    def process_pygame_events(self, pygame_events: list, frame_number: int) -> None:
         """
         This informs the object abour pygame events so it can keep track of some input states.
 
@@ -2996,7 +3003,7 @@ class PlayerKeyMaps(StringSerializable):
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def get_opposite_action(action):
+    def get_opposite_action(action: int) -> int:
         if action == PlayerKeyMaps.ACTION_UP:
             return PlayerKeyMaps.ACTION_DOWN
         elif action == PlayerKeyMaps.ACTION_RIGHT:
@@ -3027,7 +3034,7 @@ class PlayerKeyMaps(StringSerializable):
 
         # ----------------------------------------------------------------------------
 
-    def set_one_key_map(self, key: int, player_number: int, action: int):
+    def set_one_key_map(self, key: int, player_number: int, action: int) -> None:
         if key is not None:
             self.key_maps[key] = (player_number, action)
 
@@ -3042,7 +3049,7 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    def set_player_key_map(self, player_number: int, key_up: int, key_right: int, key_down: int, key_left: int, key_bomb: int, key_special: int):
+    def set_player_key_map(self, player_number: int, key_up: int, key_right: int, key_down: int, key_left: int, key_bomb: int, key_special: int) -> None:
         """
         Sets a key mapping for a player of specified (non-negative) number.
 
@@ -3094,12 +3101,12 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    def allow_control_by_mouse(self, allow: bool = True):
+    def allow_control_by_mouse(self, allow: bool = True) -> None:
         self.allow_mouse_control = allow
 
     # ----------------------------------------------------------------------------
 
-    def set_special_key_map(self, key_menu: int):
+    def set_special_key_map(self, key_menu: int) -> None:
         self.set_one_key_map(key_menu, -1, PlayerKeyMaps.ACTION_MENU)
 
     # ----------------------------------------------------------------------------
@@ -3126,7 +3133,7 @@ class PlayerKeyMaps(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    def load_from_string(self, input_string: str):
+    def load_from_string(self, input_string: str) -> None:
         """
         Loads the mapping from string produced by save_to_string(...).
 
@@ -3286,7 +3293,26 @@ class PlayerKeyMaps(StringSerializable):
 # ==============================================================================
 
 class SoundPlayer:
-    # sound events used by other classes to tell soundplayer what to play
+    """
+    Sound events used by other classes to tell soundplayer what to play
+
+    Attributes
+    ----------
+    sound_volume : int
+        Volume of played action sound
+    music_volume : int
+        Volume of played music
+    sounds : dict[pygame.mixer.Sound]
+        sound records itselves
+    music_filenames : list[str]
+        sound files
+    current_music_index : int
+        What playing now
+    playing_walk : bool
+        Play sound for walking
+    kick_last_played_time : int
+        Play sound when kick the bomb - not immediatelly
+    """
 
     SOUND_EVENT_EXPLOSION = 0
     SOUND_EVENT_BOMB_PUT = 1
@@ -3362,14 +3388,28 @@ class SoundPlayer:
 
     # ----------------------------------------------------------------------------
 
-    def play_once(self, filename):
+    def play_once(self, filename: str) -> None:
+        """
+        Play the sound now
+
+        Parameters
+        ----------
+        filename : str
+        """
         sound = pygame.mixer.Sound(filename)
         sound.set_volume(self.sound_volume)
         sound.play()
 
     # ----------------------------------------------------------------------------
 
-    def set_music_volume(self, new_volume):
+    def set_music_volume(self, new_volume: float) -> None:
+        """
+        Set the volume of playing music
+
+        Parameters
+        ----------
+        new_volume : float
+        """
         self.music_volume = new_volume if new_volume > Settings.SOUND_VOLUME_THRESHOLD else 0
 
         debug_log("changing music volume to " + str(self.music_volume))
@@ -3384,7 +3424,14 @@ class SoundPlayer:
 
     # ----------------------------------------------------------------------------
 
-    def set_sound_volume(self, new_volume):
+    def set_sound_volume(self, new_volume: float) -> None:
+        """
+        Set the volume of playing sound
+
+        Parameters
+        ----------
+        new_volume : float
+        """
         self.sound_volume = new_volume if new_volume > Settings.SOUND_VOLUME_THRESHOLD else 0
 
         debug_log("changing sound volume to " + str(self.sound_volume))
@@ -3394,7 +3441,10 @@ class SoundPlayer:
 
     # ----------------------------------------------------------------------------
 
-    def change_music(self):
+    def change_music(self) -> None:
+        """
+        Change music to another one
+        """
         while True:
             new_music_index = random.randint(0, len(self.music_filenames) - 1)
 
@@ -3416,15 +3466,28 @@ class SoundPlayer:
 
     # ----------------------------------------------------------------------------
 
-    def play_sound_event(self, sound_event):
+    def play_sound_event(self, sound_event: int) -> None:
+        """
+        Play sound for event
+
+        Parameters
+        ----------
+        sound_event : int
+            Event ID
+        """
         self.process_events([sound_event])
 
     # ----------------------------------------------------------------------------
 
-    ## Processes a list of sound events (see class constants) by playing
-    #  appropriate sounds.
+    def process_events(self, sound_event_list: list) -> None:
+        """
+        Processes a list of sound events (see class constants) by playing appropriate sounds.
 
-    def process_events(self, sound_event_list):
+        Parameters
+        ----------
+        sound_event_list : list[int]
+        """
+
         stop_playing_walk = True
 
         for sound_event in sound_event_list:
@@ -3472,10 +3535,22 @@ class SoundPlayer:
 # ==============================================================================
 
 class Animation:
+    """
+    Info about animation
+
+    Attributes
+    ----------
+    framerate : float
+    frame_time : float
+    frame_images : list[pygame.surface.Surface]
+    playing_instances : list[tuple[tuple[int, int], int]]
+        A set of playing animations, it is a list of tuples in
+        a format: (pixel_coordinates, started_playing).
+    """
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, filename_prefix, start_number, end_number, filename_postfix, framerate=10):
+    def __init__(self, filename_prefix: str, start_number: int, end_number: int, filename_postfix: str, framerate: float = 10):
         self.framerate = framerate
         self.frame_time = 1000 / self.framerate
 
@@ -3489,8 +3564,14 @@ class Animation:
 
     # ----------------------------------------------------------------------------
 
-    def play(self, coordinates):
-        # convert center coordinates to top left coordinates:
+    def play(self, coordinates: tuple) -> None:
+        """
+        Convert center coordinates to top left coordinates:
+
+        Parameters
+        ----------
+        coordinates : tuple[int, int]
+        """
 
         top_left = (coordinates[0] - self.frame_images[0].get_size()[0] / 2,
                     coordinates[1] - self.frame_images[0].get_size()[1] / 2)
@@ -3498,7 +3579,7 @@ class Animation:
 
     # ----------------------------------------------------------------------------
 
-    def draw(self, surface):
+    def draw(self, surface: pygame.surface.Surface) -> None:
         i = 0
 
         time_now = pygame.time.get_ticks()
@@ -3522,11 +3603,26 @@ class Animation:
 
 # ==============================================================================
 
-## Abstract class representing a game menu. Menu item strings can contain formatting characters:
-#
-#  ^htmlcolorcode - sets the text color (HTML #rrggbb format,e.g. ^#2E44BF) from here to end of line or another formatting character
 
 class Menu:
+    """
+    Abstract class representing a game menu. Menu item strings can contain formatting characters:
+
+    ^htmlcolorcode - sets the text color (HTML #rrggbb format,e.g. ^#2E44BF) from here to end of line or another formatting character
+
+    Attributes
+    ----------
+    text : str
+    selected_item : tuple[int, int]
+    items : list[]
+    menu_left : bool
+    confirm_prompt_result : bool or None
+    scroll_position : int
+    sound_player : SoundPlayer
+    action_keys_previous_state : dict[int, bool]
+    state : int
+    """
+
     MENU_STATE_SELECTING = 0  ##< still selecting an item
     MENU_STATE_CONFIRM = 1  ##< menu has been confirmed
     MENU_STATE_CANCEL = 2  ##< menu has been cancelled
@@ -3536,7 +3632,7 @@ class Menu:
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, sound_player):
+    def __init__(self, sound_player: SoundPlayer):
         self.text = ""
         self.selected_item = (0, 0)  ##< row, column
         self.items = []  ##< list (rows) of lists (column)
@@ -3558,42 +3654,59 @@ class Menu:
 
     # ----------------------------------------------------------------------------
 
-    def get_scroll_position(self):
+    def get_scroll_position(self) -> int:
         return self.scroll_position
 
     # ----------------------------------------------------------------------------
 
-    def get_state(self):
+    def get_state(self) -> int:
         return self.state
 
     # ----------------------------------------------------------------------------
 
-    def prompt_action_confirm(self):
+    def prompt_action_confirm(self) -> None:
         self.confirm_prompt_result = None
         self.state = Menu.MENU_STATE_CONFIRM_PROMPT
 
     # ----------------------------------------------------------------------------
 
-    def get_text(self):
+    def get_text(self) -> str:
         return self.text
 
     # ----------------------------------------------------------------------------
 
-    ## Returns menu items in format: ( (column 1 row 1 text), (column 1 row 2 text), ...), ((column 2 row 1 text), ...) ).
+    def get_items(self) -> list:
+        """
+        Returns menu items in format: ( (column 1 row 1 text), (column 1 row 2 text), ...), ((column 2 row 1 text), ...) ).
 
-    def get_items(self):
+        Return
+        ------
+        list[]
+        """
         return self.items
 
     # ----------------------------------------------------------------------------
 
-    ## Returns a selected menu item in format (row, column).
+    def get_selected_item(self) -> tuple:
+        """
+        Returns a selected menu item in format (row, column).
 
-    def get_selected_item(self):
+        Return
+        ------
+        tuple[int, int]
+        """
         return self.selected_item
 
     # ----------------------------------------------------------------------------
 
-    def process_inputs(self, input_list):
+    def process_inputs(self, input_list: list) -> None:
+        """
+        Processes inputs
+
+        Parameters
+        ----------
+        input_list : list[tuple[int, int]]
+        """
         if self.menu_left:
             self.menu_left = False
             self.state = Menu.MENU_STATE_SELECTING
@@ -3631,14 +3744,26 @@ class Menu:
 
     # ----------------------------------------------------------------------------
 
-    def mouse_went_over_item(self, item_coordinates):
+    def mouse_went_over_item(self, item_coordinates: tuple) -> None:
+        """
+        Processes when mouse is over thing
+
+        Parameters
+        ----------
+        item_coordinates : tuple[int, int]
+        """
         self.selected_item = item_coordinates
 
     # ----------------------------------------------------------------------------
 
-    ## Handles mouse button events in the menu.
+    def mouse_button_pressed(self, button_number: int) -> None:
+        """
+        Handles mouse button events in the menu.
 
-    def mouse_button_pressed(self, button_number):
+        Parameters
+        ----------
+        button_number : int
+        """
         if button_number == 0:  # left
             self.action_pressed(PlayerKeyMaps.ACTION_BOMB)
         elif button_number == 1:  # right
@@ -3650,7 +3775,14 @@ class Menu:
 
     # ----------------------------------------------------------------------------
 
-    def scroll(self, up):
+    def scroll(self, up: bool) -> None:
+        """
+        Scroll in menu
+
+        Parameters
+        ----------
+        up : is scrolling up
+        """
         if up:
             if self.scroll_position > 0:
                 self.scroll_position -= 1
@@ -3665,27 +3797,38 @@ class Menu:
 
     # ----------------------------------------------------------------------------
 
-    ## Should be called when the menu is being left.
-
-    def leaving(self):
+    def leaving(self) -> None:
+        """
+        Should be called when the menu is being left.
+        """
         self.menu_left = True
         self.confirm_prompt_result = None
         self.sound_player.play_sound_event(SoundPlayer.SOUND_EVENT_CONFIRM)
 
     # ----------------------------------------------------------------------------
 
-    ## Prompts confirmation of given menu item if it has been selected.
+    def prompt_if_needed(self, menu_item_coordinates: tuple) -> None:
+        """
+        Prompts confirmation of given menu item if it has been selected.
 
-    def prompt_if_needed(self, menu_item_coordinates):
+        Parameters
+        ----------
+        menu_item_coordinates : tuple[int, int]
+        """
         if self.state == Menu.MENU_STATE_CONFIRM and (self.confirm_prompt_result is None or self.confirm_prompt_result == False) and self.selected_item == menu_item_coordinates:
             self.prompt_action_confirm()
 
     # ----------------------------------------------------------------------------
 
-    ## Is called once for every action key press (not each frame, which is
-    #  not good for menus). This can be overridden.
+    def action_pressed(self, action: int) -> None:
+        """
+        Is called once for every action key press (not each frame, which is not good for menus). This can be overridden.
 
-    def action_pressed(self, action):
+        Parameters
+        ----------
+        action : int
+        """
+
         old_selected_item = self.selected_item
 
         if self.state == Menu.MENU_STATE_CONFIRM_PROMPT:
@@ -3727,7 +3870,7 @@ class MainMenu(Menu):
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, sound_player):
+    def __init__(self, sound_player: SoundPlayer):
         super(MainMenu, self).__init__(sound_player)
 
         self.items = [(
@@ -3738,7 +3881,7 @@ class MainMenu(Menu):
 
     # ----------------------------------------------------------------------------
 
-    def action_pressed(self, action):
+    def action_pressed(self, action: int) -> None:
         super(MainMenu, self).action_pressed(action)
         self.prompt_if_needed((3, 0))
 
@@ -3749,14 +3892,21 @@ class ResultMenu(Menu):
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, sound_player):
+    def __init__(self, sound_player: SoundPlayer):
         super(ResultMenu, self).__init__(sound_player)
 
         self.items = [["I get it"]]
 
     # ----------------------------------------------------------------------------
 
-    def set_results(self, players):
+    def set_results(self, players: list) -> None:
+        """
+        Set results
+
+        Parameters
+        ----------
+        players : list[Player]
+        """
         win_maximum = 0
         winner_team_numbers = []
 
@@ -3825,13 +3975,13 @@ class PlayMenu(Menu):
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, sound_player):
+    def __init__(self, sound_player: SoundPlayer):
         super(PlayMenu, self).__init__(sound_player)
         self.items = [("resume", "to main menu")]
 
     # ----------------------------------------------------------------------------
 
-    def action_pressed(self, action):
+    def action_pressed(self, action: int) -> None:
         super(PlayMenu, self).action_pressed(action)
         self.prompt_if_needed((1, 0))
 
@@ -3839,12 +3989,29 @@ class PlayMenu(Menu):
 # ==============================================================================
 
 class SettingsMenu(Menu):
+    """
+    Settings menu
+
+    Attributes
+    ----------
+    settings : Settings
+    game : Game
+    """
+
     COLOR_ON = "^#1DF53A"
     COLOR_OFF = "^#F51111"
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, sound_player, settings, game):
+    def __init__(self, sound_player: SoundPlayer, settings, game):
+        """
+
+        Parameters
+        ----------
+        sound_player : SoundPlayer
+        settings : Settings
+        game : Game
+        """
         super(SettingsMenu, self).__init__(sound_player)
         self.settings = settings
         self.game = game
@@ -3852,12 +4019,12 @@ class SettingsMenu(Menu):
 
         # ----------------------------------------------------------------------------
 
-    def bool_to_str(self, bool_value):
+    def bool_to_str(self, bool_value: bool) -> str:
         return SettingsMenu.COLOR_ON + "on" if bool_value else SettingsMenu.COLOR_OFF + "off"
 
     # ----------------------------------------------------------------------------
 
-    def update_items(self):
+    def update_items(self) -> None:
         self.items = [(
             "sound volume: " + (SettingsMenu.COLOR_ON if self.settings.sound_is_on() else SettingsMenu.COLOR_OFF) + str(
                 int(self.settings.sound_volume * 10) * 10) + " %",
@@ -3875,7 +4042,7 @@ class SettingsMenu(Menu):
 
         # ----------------------------------------------------------------------------
 
-    def action_pressed(self, action):
+    def action_pressed(self, action: int) -> None:
         super(SettingsMenu, self).action_pressed(action)
 
         self.prompt_if_needed((6, 0))
@@ -3951,10 +4118,30 @@ class SettingsMenu(Menu):
 # ==============================================================================
 
 class ControlsMenu(Menu):
+    """
+    Controls menu
+
+    Attributes
+    ----------
+    player_key_maps : PlayerKeyMaps
+    game : Game
+    waiting_for_key : tuple[int, int] or None
+        if not None, this contains a tuple (player number, action) of action that is currently being remapped
+    wait_for_release : bool
+        Used to wait for keys release before new key map is captured
+    """
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, sound_player, player_key_maps, game):
+    def __init__(self, sound_player: SoundPlayer, player_key_maps: PlayerKeyMaps, game):
+        """
+
+        Parameters
+        ----------
+        sound_player : SoundPlayer
+        player_key_maps : PlayerKeyMaps
+        game : Game
+        """
         super(ControlsMenu, self).__init__(sound_player)
         self.player_key_maps = player_key_maps
         self.game = game
@@ -3965,12 +4152,12 @@ class ControlsMenu(Menu):
 
     # ----------------------------------------------------------------------------
 
-    def color_key_string(self, key_string):
+    def color_key_string(self, key_string: str) -> str:
         return "^#38A8F2" + key_string if key_string != "none" else "^#E83535" + key_string
 
     # ----------------------------------------------------------------------------
 
-    def update_items(self):
+    def update_items(self) -> None:
         self.items = [["go back"]]
 
         prompt_string = "press some key"
@@ -4002,10 +4189,15 @@ class ControlsMenu(Menu):
 
     # ----------------------------------------------------------------------------
 
-    ## This should be called periodically when the menu is active. It will
-    #  take care of catching pressed keys if waiting for key remap.
+    def update(self, player_key_maps: PlayerKeyMaps) -> None:
+        """
+        This should be called periodically when the menu is active. It will take care of catching pressed keys
+        if waiting for key remap.
 
-    def update(self, player_key_maps):
+        Parameters
+        ----------
+        player_key_maps : PlayerKeyMaps
+        """
         if self.waiting_for_key is not None:
             keys_pressed = list(pygame.key.get_pressed())
 
@@ -4041,7 +4233,7 @@ class ControlsMenu(Menu):
 
     # ----------------------------------------------------------------------------
 
-    def action_pressed(self, action):
+    def action_pressed(self, action: int) -> None:
         super(ControlsMenu, self).action_pressed(action)
 
         if self.waiting_for_key is not None:
@@ -4075,21 +4267,32 @@ class AboutMenu(Menu):
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, sound_player):
+    def __init__(self, sound_player: SoundPlayer):
         super(AboutMenu, self).__init__(sound_player)
         self.text = ("^#2E44BFBombman^#FFFFFF - free Bomberman clone, ^#4EF259version " + Game.VERSION_STR + "\n"
-                                                                                                             "Miloslav \"tastyfish\" Ciz, 2016\n\n"
-                                                                                                             "This game is free software, published under CC0 1.0.\n")
+                     "Original code:\n\n"
+                     "Miloslav \"tastyfish\" Ciz, 2016\n\n"
+                     "Python 3 port and update:\n\n"
+                     "Petr \"Kalanis\" Plsek, 2024\n\n"
+                     "This game is free software, published under CC0 1.0.\n"
+                     )
         self.items = [["ok, nice, back"]]
 
 
 # ==============================================================================
 
 class MapSelectMenu(Menu):
+    """
+    Map select menu
+
+    Attributes
+    ----------
+    map_filenames : list[str]
+    """
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, sound_player):
+    def __init__(self, sound_player: SoundPlayer):
         super(MapSelectMenu, self).__init__(sound_player)
         self.text = "Now select a map."
         self.map_filenames = []
@@ -4097,7 +4300,7 @@ class MapSelectMenu(Menu):
 
     # ----------------------------------------------------------------------------
 
-    def update_items(self):
+    def update_items(self) -> None:
         self.map_filenames = sorted([filename for filename in os.listdir(Game.MAP_PATH) if
                                      os.path.isfile(os.path.join(Game.MAP_PATH, filename))])
 
@@ -4111,22 +4314,22 @@ class MapSelectMenu(Menu):
 
     # ----------------------------------------------------------------------------
 
-    def random_was_selected(self):
+    def random_was_selected(self) -> bool:
         return self.selected_item[0] == 1
 
     # ----------------------------------------------------------------------------
 
-    def show_map_preview(self):
+    def show_map_preview(self) -> bool:
         return self.selected_item[0] != 0 and self.selected_item[0] != 1
 
     # ----------------------------------------------------------------------------
 
-    def get_random_map_name(self):
+    def get_random_map_name(self) -> str:
         return random.choice(self.map_filenames)
 
     # ----------------------------------------------------------------------------
 
-    def get_selected_map_name(self):
+    def get_selected_map_name(self) -> str:
         if self.selected_item[0] == 0:  # pick random
             return random.choice(self.map_filenames)
 
@@ -4144,10 +4347,18 @@ class MapSelectMenu(Menu):
 # ==============================================================================
 
 class PlaySetupMenu(Menu):
+    """
+    Map select menu
+
+    Attributes
+    ----------
+    selected_item : tuple[int, int]
+    play_setup : PlaySetup
+    """
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, sound_player, play_setup):
+    def __init__(self, sound_player: SoundPlayer, play_setup: PlaySetup):
         super(PlaySetupMenu, self).__init__(sound_player)
         self.selected_item = (0, 1)
         self.play_setup = play_setup
@@ -4155,7 +4366,7 @@ class PlaySetupMenu(Menu):
 
     # ----------------------------------------------------------------------------
 
-    def update_items(self):
+    def update_items(self) -> None:
         self.items = [[], [], ["games: " + str(self.play_setup.get_number_of_games())]]
 
         dark_grey = (50, 50, 50)
@@ -4181,7 +4392,7 @@ class PlaySetupMenu(Menu):
 
     # ----------------------------------------------------------------------------
 
-    def action_pressed(self, action):
+    def action_pressed(self, action: int) -> None:
         super(PlaySetupMenu, self).action_pressed(action)
 
         if action == PlayerKeyMaps.ACTION_UP:
@@ -4225,6 +4436,42 @@ class PlaySetupMenu(Menu):
 # ==============================================================================
 
 class Renderer:
+    """
+    Render content
+
+    Attributes
+    ----------
+    screen_resolution : tuple[int, int]
+    screen_center : tuple[float, float]
+    map_render_location : tuple[float, float]
+    environment_images : dict[str, tuple[pygame.surface.Surface, pygame.surface.Surface, pygame.surface.Surface]]
+    preview_map_name : str
+    preview_map_image : pygame.surface.Surface or None
+    font_small : pygame.font.Font
+    font_normal : pygame.font.Font
+    previous_mouse_coordinates : tuple[int, int]
+    prerendered_map : pygame.surface.Surface or None
+    prerendered_map_background : pygame.surface.Surface
+    player_images : list[dict[pygame.surface.Surface]]
+        player images in format [color index]["sprite name"] and [color index]["sprite name"][frame]
+    bomb_images : list[pygame.surface.Surface]
+    flame_images : list[pygame.surface.Surface]
+    item_images : dict[int, pygame.surface.Surface]
+    gui_images : dict[int, pygame.surface.Surface]
+    player_info_board_images : list[pygame.surface.Surface or None]
+    menu_background_image : pygame.surface.Surface or None
+    menu_item_images : dict[tuple[int, int], tuple[int, pygame.surface.Surface]] or None
+    other_images : dict[str, pygame.surface.Surface or list[pygame.surface.Surface]]
+    icon_images : dict[int or str, pygame.surface.Surface]
+    animations : dict[int, Animation]
+    party_circles : list[tuple[tuple[int, int], int, tuple[int, int, int], float, float]]
+        holds info about party cheat circles, list of tuples in format (coords,radius,color,phase,speed)
+    party_players : list[tuple[tuple[int, int], int, int, bool]]
+        holds info about party cheat players, list of tuples in format (coords,color index,millisecond delay, rotate right)
+    party_bombs : list[list[int]]
+        holds info about party bombs, list of lists in format [x,y,increment x,increment y]
+    """
+
     COLOR_RGB_VALUES = [
         (210, 210, 210),  # white
         (10, 10, 10),  # black
@@ -4292,7 +4539,10 @@ class Renderer:
             filename_wall = os.path.join(Game.RESOURCE_PATH, "tile_" + environment_name + "_wall.png")
 
             self.environment_images[environment_name] = (
-            pygame.image.load(filename_floor), pygame.image.load(filename_block), pygame.image.load(filename_wall))
+                pygame.image.load(filename_floor),
+                pygame.image.load(filename_block),
+                pygame.image.load(filename_wall)
+            )
 
         self.prerendered_map = None  # keeps a reference to a map for which some parts have been prerendered
         self.prerendered_map_background = pygame.Surface((
@@ -4483,30 +4733,51 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    ## Converts (r,g,b) tuple to html #rrggbb notation.
-
     @staticmethod
-    def rgb_to_html_notation(rgb_color):
+    def rgb_to_html_notation(rgb_color: tuple) -> str:
+        """
+        Converts (r,g,b) tuple to html #rrggbb notation.
+
+        Parameters
+        ----------
+        rgb_color : tuple[int, int, int]
+
+        Return
+        ------
+        str
+        """
         return "#" + hex(rgb_color[0])[2:].zfill(2) + hex(rgb_color[1])[2:].zfill(2) + hex(rgb_color[2])[2:].zfill(2)
 
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def colored_text(color_index, text, end_with_white=True):
+    def colored_text(color_index: int, text: str) -> str:
         return "^" + Renderer.rgb_to_html_notation(
             Renderer.lighten_color(Renderer.COLOR_RGB_VALUES[color_index], 75)) + text + "^#FFFFFF"
 
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def colored_color_name(color_index, end_with_white=True):
+    def colored_color_name(color_index: int) -> str:
         return Renderer.colored_text(color_index, Game.COLOR_NAMES[color_index])
 
     # ----------------------------------------------------------------------------
 
-    ## Returns colored image from another image (replaces red color with given color). This method is slow. Color is (r,g,b) tuple of 0 - 1 floats.
+    def color_surface(self, surface: pygame.surface.Surface, color_number: int) -> pygame.surface.Surface:
+        """
+        Returns colored image from another image (replaces red color with given color).
+        This method is slow.
+        Color is (r,g,b) tuple of 0 - 1 floats.
 
-    def color_surface(self, surface, color_number):
+        Parameters
+        ----------
+        surface : pygame.surface.Surface
+        color_number : int
+
+        Return
+        ------
+        pygame.surface.Surface
+        """
         result = surface.copy()
 
         # change all red pixels to specified color
@@ -4524,7 +4795,19 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    def tile_position_to_pixel_position(self, tile_position, center=(0, 0)):
+    def tile_position_to_pixel_position(self, tile_position: tuple, center: tuple = (0, 0)) -> tuple:
+        """
+        Returns position of tile from pixel one
+
+        Parameters
+        ----------
+        tile_position : tuple[int, int]
+        center : tuple[int, int]
+
+        Return
+        ------
+        tuple[int, int]
+        """
         return (int(float(tile_position[0]) * Renderer.MAP_TILE_WIDTH) - center[0],
                 int(float(tile_position[1]) * Renderer.MAP_TILE_HEIGHT) - center[1])
 
@@ -4532,6 +4815,14 @@ class Renderer:
 
     @staticmethod
     def get_screen_size() -> tuple:
+        """
+        Screen size
+
+        Return
+        ------
+        tuple[int, int]
+        """
+
         display = pygame.display.get_surface()
 
         return display.get_size() if display is not None else (0, 0)
@@ -4539,38 +4830,91 @@ class Renderer:
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def get_map_render_position():
+    def get_map_render_position() -> tuple:
+        """
+        Screen size
+
+        Return
+        ------
+        tuple[int, int]
+        """
+
         screen_size = Renderer.get_screen_size()
-        return ((screen_size[0] - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_WIDTH * GameMap.MAP_WIDTH) / 2, (
-                    screen_size[
-                        1] - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_HEIGHT * GameMap.MAP_HEIGHT - 50) / 2)
+        return (
+            (screen_size[0] - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_WIDTH * GameMap.MAP_WIDTH) / 2,
+            (screen_size[1] - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_HEIGHT * GameMap.MAP_HEIGHT - 50) / 2
+        )
 
         # ----------------------------------------------------------------------------
 
     @staticmethod
-    def map_position_to_pixel_position(map_position, offset=(0, 0)):
+    def map_position_to_pixel_position(map_position: tuple, offset: tuple=(0, 0)) -> tuple:
+        """
+        Returns position of pixel on map
+
+        Parameters
+        ----------
+        map_position : tuple[int, int]
+        offset : tuple[int, int]
+
+        Return
+        ------
+        tuple[int, int]
+        """
+
         map_render_location = Renderer.get_map_render_position()
         return (
-        map_render_location[0] + int(map_position[0] * Renderer.MAP_TILE_WIDTH) + Renderer.MAP_BORDER_WIDTH + offset[0],
-        map_render_location[1] + int(map_position[1] * Renderer.MAP_TILE_HEIGHT) + Renderer.MAP_BORDER_WIDTH + offset[
-            1])
+            map_render_location[0] + int(map_position[0] * Renderer.MAP_TILE_WIDTH) + Renderer.MAP_BORDER_WIDTH + offset[0],
+            map_render_location[1] + int(map_position[1] * Renderer.MAP_TILE_HEIGHT) + Renderer.MAP_BORDER_WIDTH + offset[1]
+        )
 
-    def set_resolution(self, new_resolution):
+    def set_resolution(self, new_resolution: tuple) -> None:
+        """
+        Set new resolution
+
+        Parameters
+        ----------
+        new_resolution : tuple[int, int]
+        """
         self.screen_resolution = new_resolution
 
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def darken_color(color, by_how_may):
+    def darken_color(color: tuple, by_how_may: int) -> tuple:
+        """
+
+        Parameters
+        ----------
+        color : tuple[int, int, int]
+        by_how_may: int
+
+        Return
+        ------
+        tuple[int, int, int]
+        """
+
         r = max(color[0] - by_how_may, 0)
         g = max(color[1] - by_how_may, 0)
         b = max(color[2] - by_how_may, 0)
-        return (r, g, b)
+        return r, g, b
 
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def lighten_color(color, by_how_may) -> tuple:
+    def lighten_color(color: tuple, by_how_may: int) -> tuple:
+        """
+
+        Parameters
+        ----------
+        color : tuple[int, int, int]
+        by_how_may: int
+
+        Return
+        ------
+        tuple[int, int, int]
+        """
+
         r = min(color[0] + by_how_may, 255)
         g = min(color[1] + by_how_may, 255)
         b = min(color[2] + by_how_may, 255)
@@ -4578,7 +4922,7 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    def __render_info_board_item_row(self, x, y, limit, item_type, player, board_image):
+    def __render_info_board_item_row(self, x: int, y: int, limit: int, item_type: int, player: Player, board_image: pygame.surface.Surface) -> None:
         item_count = 20 if item_type == GameMap.ITEM_FLAME \
             and player.get_item_count(GameMap.ITEM_SUPERFLAME) >= 1 \
             else player.get_item_count(item_type)
@@ -4597,10 +4941,16 @@ class Renderer:
 
             # ----------------------------------------------------------------------------
 
-    ## Updates info board images in self.player_info_board_images. This should be called each frame, as
-    #  rerendering is done only when needed.
+    def update_info_boards(self, players: list) -> None:
+        """
+        Updates info board images in self.player_info_board_images. This should be called each frame, as re-rendering
+        is done only when needed.
 
-    def update_info_boards(self, players):
+        Parameters
+        ----------
+        players : list[Player]
+        """
+
         for i in range(10):  # for each player number
             update_needed = False
 
@@ -4633,8 +4983,7 @@ class Renderer:
             board_image.blit(self.gui_images["info board"], (0, 0))
             board_image.blit(self.font_small.render(str(player.get_kills()), True, (0, 0, 0)), (45, 0))
             board_image.blit(self.font_small.render(str(player.get_wins()), True, (0, 0, 0)), (65, 0))
-            board_image.blit(self.font_small.render(Game.COLOR_NAMES[i], True,
-                                                    Renderer.darken_color(Renderer.COLOR_RGB_VALUES[i], 100)), (4, 2))
+            board_image.blit(self.font_small.render(Game.COLOR_NAMES[i], True, Renderer.darken_color(Renderer.COLOR_RGB_VALUES[i], 100)), (4, 2))
 
             if player.is_dead():
                 board_image.blit(self.gui_images["out"], (15, 34))
@@ -4668,15 +5017,36 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    def process_animation_events(self, animation_event_list):
+    def process_animation_events(self, animation_event_list: list) -> None:
+        """
+        Process preset animations
+
+        Parameters
+        ----------
+        animation_event_list : list[tuple[int, tuple[int, int]]]
+        """
         for animation_event in animation_event_list:
             self.animations[animation_event[0]].play(animation_event[1])
 
     # ----------------------------------------------------------------------------
 
-    ## Renders text with outline, line breaks, formatting, etc.
+    def render_text(self, font: pygame.font.Font, text_to_render: str, color: tuple, outline_color: tuple = (0, 0, 0), center: bool = False) -> pygame.surface.Surface:
+        """
+        Renders text with outline, line breaks, formatting, etc.
 
-    def render_text(self, font, text_to_render, color, outline_color=(0, 0, 0), center=False):
+        Parameters
+        ----------
+        font : pygame.font.Font
+        text_to_render : str
+        color : tuple[int, int, int]
+        outline_color : tuple[int, int, int]
+        center : bool
+
+        Return
+        ------
+        pygame.surface.Surface
+        """
+
         text_lines = text_to_render.split("\n")
         rendered_lines = []
 
@@ -4743,9 +5113,15 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    ## Updates images in self.menu_item_images (only if needed).
+    def update_menu_item_images(self, menu: Menu) -> None:
+        """
+        Updates images in self.menu_item_images (only if needed)
 
-    def update_menu_item_images(self, menu):
+        Parameters
+        ----------
+        menu: Menu
+        """
+
         if self.menu_item_images is None:
             self.menu_item_images = {}  # format: (row, column) : (item text, image)
 
@@ -4788,7 +5164,20 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    def render_menu(self, menu_to_render, game):
+    def render_menu(self, menu_to_render: Menu, game) -> pygame.surface.Surface:
+        """
+        Render menu
+
+        Parameters
+        ----------
+        menu_to_render: Menu
+        game: Game
+
+        Return
+        ------
+        pygame.surface.Surface
+        """
+
         result = pygame.Surface(self.screen_resolution)
 
         if self.menu_background_image is None:
@@ -4977,7 +5366,7 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    def update_map_preview_image(self, map_filename):
+    def update_map_preview_image(self, map_filename: str) -> None:
         if map_filename == "":
             self.preview_map_name = ""
             self.preview_map_image = None
@@ -5077,7 +5466,15 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    def __prerender_map(self, map_to_render):
+    def __prerender_map(self, map_to_render: GameMap) -> None:
+        """
+        Pre-rendered map
+
+        Parameters
+        ----------
+        map_to_render: GameMap
+        """
+
         self.animation_events = []  # clear previous animation
 
         debug_log("prerendering map...")
@@ -5130,9 +5527,20 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    ##< Gets an info about how given player whould be rendered in format (image to render, sprite center, relative pixel offset, draw_shadow, overlay images).
+    def __get_player_render_info(self, player: Player, game_map: GameMap) -> tuple:
+        """
+        Gets an info about how given player whould be rendered in format (image to render, sprite center, relative pixel offset, draw_shadow, overlay images).
 
-    def __get_player_render_info(self, player, game_map):
+        Parameters
+        ----------
+        player: Player
+        game_map: GameMap
+
+        Return
+        ------
+        tuple[pygame.surface.Surface or None, tuple[int, int], list[float], bool, list[pygame.surface.Surface]]
+        """
+
         profiler.measure_start("map rend. player")
 
         draw_shadow = True
@@ -5141,10 +5549,10 @@ class Renderer:
 
         if player.is_dead():
             profiler.measure_stop("map rend. player")
-            return (None, (0, 0), (0, 0), False, [])
+            return None, (0, 0), (0, 0), False, []
 
         sprite_center = Renderer.PLAYER_SPRITE_CENTER
-        animation_frame = (player.get_state_time() / 100) % 4
+        animation_frame = int((player.get_state_time() / 100) % 4)
         color_index = player.get_number() if game_map.get_state() == GameMap.STATE_WAITING_TO_PLAY else player.get_team_number()
 
         if player.is_in_air():
@@ -5190,13 +5598,24 @@ class Renderer:
 
         profiler.measure_stop("map rend. player")
 
-        return (image_to_render, sprite_center, relative_offset, draw_shadow, overlay_images)
+        return image_to_render, sprite_center, relative_offset, draw_shadow, overlay_images
 
     # ----------------------------------------------------------------------------
 
-    ##< Same as __get_player_render_info, but for bombs.
+    def __get_bomb_render_info(self, bomb: Bomb, game_map: GameMap):
+        """
+        Same as __get_player_render_info, but for bombs.
 
-    def __get_bomb_render_info(self, bomb, game_map):
+        Parameters
+        ----------
+        bomb: Bomb
+        game_map: GameMap
+
+        Return
+        ------
+        tuple[pygame.surface.Surface, tuple[int, int], list[float], bool, list[pygame.surface.Surface]]
+        """
+
         profiler.measure_start("map rend. bomb")
         sprite_center = Renderer.BOMB_SPRITE_CENTER
         animation_frame = (bomb.time_of_existence / 100) % 4
@@ -5229,11 +5648,11 @@ class Renderer:
 
         profiler.measure_stop("map rend. bomb")
 
-        return (image_to_render, sprite_center, relative_offset, True, overlay_images)
+        return image_to_render, sprite_center, relative_offset, True, overlay_images
 
     # ----------------------------------------------------------------------------
 
-    def render_map(self, map_to_render):
+    def render_map(self, map_to_render: GameMap) -> pygame.surface.Surface:
         result = pygame.Surface(self.screen_resolution)
 
         self.menu_background_image = None  # unload unneccessarry images
@@ -5273,7 +5692,7 @@ class Renderer:
         line_number = 0
         object_to_render_index = 0
 
-        flame_animation_frame = (pygame.time.get_ticks() / 100) % 2
+        flame_animation_frame = int((pygame.time.get_ticks() / 100) % 2)
 
         for line in tiles:
             x = (GameMap.MAP_WIDTH - 1) * Renderer.MAP_TILE_WIDTH + Renderer.MAP_BORDER_WIDTH + \
@@ -5305,7 +5724,8 @@ class Renderer:
                     render_position = (
                         (render_position[0] + Renderer.MAP_BORDER_WIDTH + relative_offset[0]) %
                         self.prerendered_map_background.get_size()[0] + self.map_render_location[0],
-                        render_position[1] + Renderer.MAP_BORDER_WIDTH + self.map_render_location[1])
+                        render_position[1] + Renderer.MAP_BORDER_WIDTH + self.map_render_location[1]
+                    )
 
                     result.blit(self.other_images["shadow"], render_position)
 
@@ -5395,7 +5815,7 @@ class Renderer:
         if map_to_render.get_state() == GameMap.STATE_WAITING_TO_PLAY:
             third = GameMap.START_GAME_AFTER / 3
 
-            countdown_image_index = max(3 - map_to_render.get_map_time() / third, 1)
+            countdown_image_index = int(math.ceil(max(3 - map_to_render.get_map_time() / third, 1)))
             countdown_image = self.gui_images["countdown"][countdown_image_index]
             countdown_position = (self.screen_center[0] - countdown_image.get_size()[0] / 2,
                                   self.screen_center[1] - countdown_image.get_size()[1] / 2)
@@ -5408,6 +5828,10 @@ class Renderer:
 
 
 class AI:
+    """
+    AI behavior
+    """
+
     REPEAT_ACTIONS = (100, 300)  ##< In order not to compute actions with every single call to
 
     #   play(), actions will be stored in self.outputs and repeated
@@ -5416,7 +5840,7 @@ class AI:
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, player, game_map):
+    def __init__(self, player: Player, game_map: GameMap):
         self.player = player
         self.game_map = game_map
 
@@ -5428,7 +5852,7 @@ class AI:
 
         # ----------------------------------------------------------------------------
 
-    def tile_is_escapable(self, tile_coordinates):
+    def tile_is_escapable(self, tile_coordinates: tuple) -> bool:
         if not self.game_map.tile_is_walkable(tile_coordinates) or self.game_map.tile_has_flame(tile_coordinates):
             return False
 
@@ -5441,12 +5865,16 @@ class AI:
 
     # ----------------------------------------------------------------------------
 
-    ## Returns a two-number tuple of x, y coordinates, where x and y are
-    #  either -1, 0 or 1, indicating a rough general direction in which to
-    #  move in order to prevent AI from walking in nonsensical direction (towards
-    #  outside of the map etc.).
+    def decide_general_direction(self) -> tuple:
+        """
+        Returns a two-number tuple of x, y coordinates, where x and y are either -1, 0 or 1,
+        indicating a rough general direction in which to move in order to prevent AI from walking
+        in nonsensical direction (towards outside of the map etc.).
 
-    def decide_general_direction(self):
+        Return
+        ------
+        tuple[int, int]
+        """
         players = self.game_map.get_players()
 
         enemy_players = filter(lambda p: p.is_enemy(self.player) and not p.is_dead(), players)
@@ -5461,18 +5889,26 @@ class AI:
         dx = min(max(-1, dx), 1)
         dy = min(max(-1, dy), 1)
 
-        return (dx, dy)
+        return dx, dy
 
     # ----------------------------------------------------------------------------
 
-    ## Rates all 4 directions from a specified tile (up, right, down, left) with a number
-    #  that says how many possible safe tiles are there accesible in that direction in
-    #  case a bomb is present on the specified tile. A tuple of four integers is returned
-    #  with numbers for each direction - the higher number, the better it is to run to
-    #  safety in that direction. 0 means there is no escape and running in that direction
-    #  means death.
+    def rate_bomb_escape_directions(self, tile_coordinates: tuple) -> tuple:
+        """
+        Rates all 4 directions from a specified tile (up, right, down, left) with a number that says how many
+        possible safe tiles are there accesible in that direction in case a bomb is present on the specified tile.
+        A tuple of four integers is returned with numbers for each direction - the higher number, the better it
+        is to run to safety in that direction. 0 means there is no escape and running in that direction means death.
 
-    def rate_bomb_escape_directions(self, tile_coordinates):
+        Parameters
+        ----------
+        tile_coordinates : tuple[int, int]
+
+        Return
+        ------
+        tuple[int, int, int, int]
+        """
+
         #          up       right   down   left
         axis_directions = ((0, -1), (1, 0), (0, 1), (-1, 0))
         perpendicular_directions = ((1, 0), (0, 1), (1, 0), (0, 1))
@@ -5508,9 +5944,19 @@ class AI:
 
     # ----------------------------------------------------------------------------
 
-    ## Returns an integer score in range 0 - 100 for given file (100 = good, 0 = bad).
+    def rate_tile(self, tile_coordinates: tuple) -> int:
+        """
+        Returns an integer score in range 0 - 100 for given file (100 = good, 0 = bad).
 
-    def rate_tile(self, tile_coordinates):
+        Parameters
+        ----------
+        tile_coordinates : tuple[int, int]
+
+        Return
+        ------
+        int
+        """
+
         danger = self.game_map.get_danger_value(tile_coordinates)
 
         if danger == 0:
@@ -5550,7 +5996,7 @@ class AI:
 
     # ----------------------------------------------------------------------------
 
-    def is_trapped(self):
+    def is_trapped(self) -> bool:
         neighbour_tiles = self.player.get_neighbour_tile_coordinates()
 
         trapped = True
@@ -5564,7 +6010,17 @@ class AI:
 
     # ----------------------------------------------------------------------------
 
-    def number_of_blocks_next_to_tile(self, tile_coordinates):
+    def number_of_blocks_next_to_tile(self, tile_coordinates: tuple) -> int:
+        """
+
+        Parameters
+        ----------
+        tile_coordinates : tuple[int, int]
+
+        Return
+        ------
+        int
+        """
         count = 0
 
         for tile_offset in ((0, -1), (1, 0), (0, 1), (-1, 0)):  # for each neigbour file
@@ -5780,7 +6236,18 @@ class AI:
 
     # ----------------------------------------------------------------------------
 
-    def should_lay_multibomb(self, movement_action):
+    def should_lay_multibomb(self, movement_action: int or None) -> bool:
+        """
+
+        Parameters
+        ----------
+        movement_action : int or None
+
+        Return
+        ------
+        bool
+        """
+
         if self.player.can_throw():  # multibomb not possible with throwing glove
             return False
 
@@ -5824,6 +6291,18 @@ class AI:
 # ==============================================================================
 
 class Settings(StringSerializable):
+    """
+
+    Attributes
+    ----------
+    player_key_maps : PlayerKeyMaps
+    sound_volume : float
+    music_volume : float
+    screen_resolution : tuple[int, int]
+    fullscreen : bool
+    control_by_mouse : bool
+    """
+
     POSSIBLE_SCREEN_RESOLUTIONS = (
         (960, 720),
         (1024, 768),
@@ -5839,13 +6318,13 @@ class Settings(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, player_key_maps):
+    def __init__(self, player_key_maps: PlayerKeyMaps):
         self.player_key_maps = player_key_maps
         self.reset()
 
     # ----------------------------------------------------------------------------
 
-    def reset(self):
+    def reset(self) -> None:
         self.sound_volume = 0.7
         self.music_volume = 0.2
         self.screen_resolution = Settings.POSSIBLE_SCREEN_RESOLUTIONS[0]
@@ -5873,7 +6352,7 @@ class Settings(StringSerializable):
 
     # ----------------------------------------------------------------------------
 
-    def load_from_string(self, input_string: str):
+    def load_from_string(self, input_string: str) -> None:
         self.reset()
 
         helper_position = input_string.find(Settings.CONTROL_MAPPING_DELIMITER)
@@ -5932,7 +6411,36 @@ class Settings(StringSerializable):
 
 # ==============================================================================
 
-class Game(object):
+class Game:
+    """
+
+    Attributes
+    ----------
+    frame_number : int
+    player_key_maps : PlayerKeyMaps
+    settings : Settings
+    game_number : int
+    renderer : Renderer
+    screen : pygame.surface.Surface
+    sound_player : SoundPlayer
+    map_name : str
+    random_map_selection : bool
+    game_map : GameMap or None
+    play_setup : PlaySetup
+    menu_main : MainMenu
+    menu_settings : SettingsMenu
+    menu_about : AboutMenu
+    menu_play_setup : PlaySetupMenu
+    menu_map_select : MapSelectMenu
+    menu_play : PlayMenu
+    menu_controls : ControlsMenu
+    menu_results : ResultMenu
+    ais : list[AI]
+    state : int
+    immortal_players_numbers : list[int]
+    active_cheats : list[int]
+    """
+
     # colors used for players and teams
     COLOR_WHITE = 0
     COLOR_BLACK = 1
@@ -5974,7 +6482,7 @@ class Game(object):
     CHEAT_ALL_ITEMS = 1
     CHEAT_PLAYER_IMMORTAL = 2
 
-    VERSION_STR = "0.95"
+    VERSION_STR = "0.97"
 
     NUMBER_OF_CONTROLLED_PLAYERS = 4  ##< maximum number of non-AI players on one PC
 
@@ -6040,42 +6548,42 @@ class Game(object):
 
     # ----------------------------------------------------------------------------
 
-    def deactivate_all_cheats(self):
+    def deactivate_all_cheats(self) -> None:
         self.active_cheats = set()
 
         debug_log("all cheats deactivated")
 
     # ----------------------------------------------------------------------------
 
-    def activate_cheat(self, what_cheat):
+    def activate_cheat(self, what_cheat: int) -> None:
         self.active_cheats.add(what_cheat)
 
         debug_log("cheat activated")
 
     # ----------------------------------------------------------------------------
 
-    def deactivate_cheat(self, what_cheat):
+    def deactivate_cheat(self, what_cheat: int) -> None:
         if what_cheat in self.active_cheats:
             self.active_cheats.remove(what_cheat)
 
     # ----------------------------------------------------------------------------
 
-    def cheat_is_active(self, what_cheat):
+    def cheat_is_active(self, what_cheat) -> bool:
         return what_cheat in self.active_cheats
 
     # ----------------------------------------------------------------------------
 
-    def get_player_key_maps(self):
+    def get_player_key_maps(self) -> PlayerKeyMaps:
         return self.player_key_maps
 
     # ----------------------------------------------------------------------------
 
-    def get_settings(self):
+    def get_settings(self) -> Settings:
         return self.settings
 
     # ----------------------------------------------------------------------------
 
-    def apply_screen_settings(self):
+    def apply_screen_settings(self) -> None:
         display_flags = 0
 
         if self.settings.fullscreen:
@@ -6090,23 +6598,23 @@ class Game(object):
 
     # ----------------------------------------------------------------------------
 
-    def apply_sound_settings(self):
+    def apply_sound_settings(self) -> None:
         self.sound_player.set_music_volume(self.settings.music_volume)
         self.sound_player.set_sound_volume(self.settings.sound_volume)
 
     # ----------------------------------------------------------------------------
 
-    def apply_other_settings(self):
+    def apply_other_settings(self) -> None:
         self.player_key_maps.allow_control_by_mouse(self.settings.control_by_mouse)
 
     # ----------------------------------------------------------------------------
 
-    def save_settings(self):
+    def save_settings(self) -> None:
         self.settings.save_to_file(Game.SETTINGS_FILE_PATH)
 
     # ----------------------------------------------------------------------------
 
-    def __check_cheat(self, cheat_string, cheat=None):
+    def __check_cheat(self, cheat_string: str, cheat: int=None):
         if self.player_key_maps.string_was_typed(cheat_string):
             if cheat is not None:
                 self.activate_cheat(cheat)
@@ -6117,13 +6625,14 @@ class Game(object):
 
     # ----------------------------------------------------------------------------
 
-    ## Manages the menu actions and sets self.active_menu.
+    def manage_menus(self) -> None:
+        """
+        Manages the menu actions and sets self.active_menu.
+        """
 
-    def manage_menus(self):
         new_state = self.state
-        prevent_input_processing = False
 
-        # cheack if any cheat was typed:
+        # check if any cheat was typed:
         self.__check_cheat("party", game.CHEAT_PARTY)
         self.__check_cheat("herecomedatboi", game.CHEAT_ALL_ITEMS)
         self.__check_cheat("leeeroy", game.CHEAT_PLAYER_IMMORTAL)
@@ -6233,12 +6742,19 @@ class Game(object):
 
     # ----------------------------------------------------------------------------
 
-    def acknowledge_wins(self, winner_team_number, players):
+    def acknowledge_wins(self, winner_team_number: int, players: list) -> None:
+        """
+
+        Parameters
+        ----------
+        winner_team_number : int
+        players : list[Player]
+        """
         for player in players:
             if player.get_team_number() == winner_team_number:
                 player.set_wins(player.get_wins() + 1)
 
-                # ----------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------
 
     def run(self):
         time_before = pygame.time.get_ticks()
@@ -6364,19 +6880,31 @@ class Game(object):
 
     # ----------------------------------------------------------------------------
 
-    ## Filters a list of performed actions so that there are no actions of
-    #  human players that are not participating in the game.
+    def filter_out_disallowed_actions(self, actions: list) -> iter:
+        """
+        Filters a list of performed actions so that there are no actions of human players
+        that are not participating in the game.
 
-    def filter_out_disallowed_actions(self, actions):
+        Parameters
+        ----------
+        actions : list[tuple[int, int]]
+
+        Return
+        ------
+        iter[tuple[int, int]]
+        """
         player_slots = self.play_setup.get_slots()
+        # player_slots ->  # list ( struct ( id_src, team  ) or None )
+        # actions -> # list ( struct ( player_id_src, action_type ) )
+
         result = filter(
-            lambda a: (player_slots[a[0]] is not None and player_slots[a[0]] >= 0) or (a[1] == PlayerKeyMaps.ACTION_MENU),
+            lambda a: (player_slots[a[0]] is not None and player_slots[a[0]][0] >= 0) or (a[1] == PlayerKeyMaps.ACTION_MENU),
             actions)
         return result
 
     # ----------------------------------------------------------------------------
 
-    def simulation_step(self, dt: int):
+    def simulation_step(self, dt: int) -> None:
         """
 
         Parameters
@@ -6414,9 +6942,14 @@ class Game(object):
 
     # ----------------------------------------------------------------------------
 
-    ## Sets up a test game for debugging, so that the menus can be avoided.
+    def setup_test_game(self, setup_number: int = 0) -> None:
+        """
+        Sets up a test game for debugging, so that the menus can be avoided.
 
-    def setup_test_game(self, setup_number=0):
+        Parameters
+        ----------
+        setup_number : int
+        """
         if setup_number == 0:
             self.map_name = "classic"
             self.random_map_selection = False
@@ -6433,7 +6966,7 @@ class Game(object):
             self.game_number = 1
             self.state = Game.STATE_GAME_STARTED
 
-        # ==============================================================================
+    # ==============================================================================
 
 
 if __name__ == "__main__":
