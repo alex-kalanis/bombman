@@ -89,6 +89,16 @@ DEBUG_VERBOSE : bool
 #                     D - arrow down, under block tile
 #                     L - arrow left, under block tile
 #                     <0-9> - starting position of the player specified by the number
+#
+# todo: network -> need client-server architecture
+#       each player is client
+#       each running instance window is renderer
+#       server calculates interactions, clients only pass instructions
+#       renderers only got raw data
+#
+# todo: hack original Atomic Bomberman network protocols - with client-server will be really easy to make necessary
+#       adapters, then it will be possible to use this as another client or just renderer for projectors
+#       (which is not possible with old AB)
 
 import sys
 import pygame
@@ -100,8 +110,8 @@ import re
 # import time
 
 DEBUG_PROFILING = False
-DEBUG_FPS = True
-DEBUG_VERBOSE = True
+DEBUG_FPS = False
+DEBUG_VERBOSE = False
 
 
 # ------------------------------------------------------------------------------
@@ -449,6 +459,97 @@ class PlayerInfo:
 # ==============================================================================
 
 
+class ColorInfo:
+    """
+
+    Attributes
+    ----------
+    red : int
+        red channel
+    green : int
+        green channel
+    blue : int
+        blue channel
+    alpha : int
+        % of visibility
+    """
+
+    def __init__(self, red: int = 0, green: int = 0, blue: int = 0, alpha: int = 0):
+        self.red = min(max(red, 0), 255)
+        self.green = min(max(green, 0), 255)
+        self.blue = min(max(blue, 0), 255)
+        self.alpha = min(max(alpha, 0), 100)
+
+    def from_tuple(self, coordinates: tuple):
+        """
+        Parameters
+        ----------
+        coordinates : tuple[int, int, int, int]
+
+        Return
+        ------
+        ColorInfo
+        """
+        self.red, self.green, self.blue, self.alpha = coordinates
+        self.red, self.green, self.blue, self.alpha = int(self.red), int(self.green), int(self.blue), int(self.alpha)
+        return self
+
+    def get_tuple(self) -> tuple:
+        """
+        Return
+        ------
+        tuple[int, int, int]
+        """
+        return self.red, self.green, self.blue
+
+    def to_hex(self) -> str:
+        """
+        Return
+        ------
+        str
+        """
+        return "%02x%02x%02x" % (self.red, self.green, self.blue)
+
+    def from_hex(self, hexcode: str):
+        """
+        Parameters
+        ----------
+        hexcode : str
+
+        Return
+        ------
+        ColorInfo
+        """
+
+        self.red, self.green, self.blue = tuple(int(hexcode[i:i+2], 16) for i in (0, 2, 4))
+        return self
+
+    def __add__(self, other):
+        if isinstance(other, ColorInfo):
+            return ColorInfo(int(self.red + other.red), int(self.green + other.green), int(self.blue + other.blue))
+        else:
+            return ColorInfo(int(self.red + other), int(self.green + other), int(self.blue + other))
+
+    def __sub__(self, other):
+        if isinstance(other, ColorInfo):
+            return ColorInfo(int(self.red - other.red), int(self.green - other.green), int(self.blue - other.blue))
+        else:
+            return ColorInfo(int(self.red - other), int(self.green - other), int(self.blue - other))
+
+    def __str__(self):
+        return "ci[%s,%s,%s]" % (self.red, self.green, self.blue)
+
+# ==============================================================================
+
+
+class ColorInfoW(ColorInfo):
+
+    def whex(self):
+        return "^#" + self.to_hex()
+
+# ==============================================================================
+
+
 class MapTile:
     """
 
@@ -521,15 +622,14 @@ class PlaySetup:
     # ----------------------------------------------------------------------------
 
     def __init__(self):
-        # todo: hodnoty zpatky
         self.player_slots = [None for i in range(10)]  ##< player slots: (player_number, team_color),
-        self.number_of_games = 1
+        self.number_of_games = 10
 
         # default setup, player 0 vs 3 AI players:
         self.player_slots[0] = PlayerInfo(0, 0)
-        self.player_slots[1] = PlayerInfo(1, 1)
-        # self.player_slots[2] = PlayerInfo(-1, 2)
-        # self.player_slots[3] = PlayerInfo(-1, 3)
+        self.player_slots[1] = PlayerInfo(-1, 1)
+        self.player_slots[2] = PlayerInfo(-1, 2)
+        self.player_slots[3] = PlayerInfo(-1, 3)
 
     # ----------------------------------------------------------------------------
 
@@ -1379,7 +1479,7 @@ class GameMap:
 
         for y in range(GameMap.MAP_HEIGHT):
             for x in range(GameMap.MAP_WIDTH):
-                tile = self.get_tile(Position(y, x))
+                tile = self.get_tile(Position(x, y))
 
                 if tile.kind == MapTile.TILE_FLOOR \
                         and tile.special_object is None \
@@ -1897,6 +1997,16 @@ class Positionable:
 # ==============================================================================
 
 class PlayerActions:
+    """
+    Items for player
+
+    Attributes
+    ----------
+    player : int
+        Which player is it; -1 is system (usually menu)
+    action : int
+        Which action is it - it also be movement
+    """
 
     def __init__(self, player: int or None, action : int):
         self.player = player
@@ -1914,6 +2024,16 @@ class PlayerActions:
 # ==============================================================================
 
 class PlayerItems:
+    """
+    Items for player
+
+    Attributes
+    ----------
+    item : int
+        Which item is it - it also be actions
+    amount : int
+        Amount of items available
+    """
 
     def __init__(self, item: int, amount : int):
         self.item = item
@@ -2581,19 +2701,19 @@ class Player(Positionable):
 
             if not moved:
                 if input_action == PlayerKeyMaps.ACTION_UP:
-                    self.position -= Coordinate(distance_to_travel, 0.0)
+                    self.position -= Coordinate(0.0, distance_to_travel)
                     self.state = Player.STATE_WALKING_UP
                     moved = True
                 elif input_action == PlayerKeyMaps.ACTION_DOWN:
-                    self.position += Coordinate(distance_to_travel, 0.0)
+                    self.position += Coordinate(0.0, distance_to_travel)
                     self.state = Player.STATE_WALKING_DOWN
                     moved = True
                 elif input_action == PlayerKeyMaps.ACTION_RIGHT:
-                    self.position += Coordinate(0.0, distance_to_travel)
+                    self.position += Coordinate(distance_to_travel)
                     self.state = Player.STATE_WALKING_RIGHT
                     moved = True
                 elif input_action == PlayerKeyMaps.ACTION_LEFT:
-                    self.position -= Coordinate(0.0, distance_to_travel)
+                    self.position -= Coordinate(distance_to_travel)
                     self.state = Player.STATE_WALKING_LEFT
                     moved = True
 
@@ -2653,12 +2773,15 @@ class Player(Positionable):
         if collision_happened:
             bomb_movement = Bomb.BOMB_NO_MOVEMENT
 
-            bomb_movement = {
+            possible_movement = {
                 Player.STATE_WALKING_UP: Bomb.BOMB_ROLLING_UP,
                 Player.STATE_WALKING_RIGHT: Bomb.BOMB_ROLLING_RIGHT,
                 Player.STATE_WALKING_DOWN: Bomb.BOMB_ROLLING_DOWN,
                 Player.STATE_WALKING_LEFT: Bomb.BOMB_ROLLING_LEFT
-            }[self.state]
+            }
+
+            if self.state in possible_movement.keys():
+                bomb_movement = possible_movement[self.state]
 
             direction_vector = self.get_direction_vector()
             forward_tile = self.get_forward_tile_position()
@@ -2867,7 +2990,6 @@ class Player(Positionable):
             self.state_time += dt
         else:
             self.state_time = 0  # reset the state time
-
 
 # ==============================================================================
 
@@ -3272,15 +3394,20 @@ class PlayerKeyMaps(StringSerializable):
     # ----------------------------------------------------------------------------
 
     def reset(self):
+        """
+        Set default play controls
+        it's possible to have up to 5 "living" players on 1 instance;
+        the rest is AI or over network
+        """
         self.allow_control_by_mouse(False)
         self.set_player_key_map(0, pygame.K_w, pygame.K_d, pygame.K_s, pygame.K_a, pygame.K_c, pygame.K_v)
-        self.set_player_key_map(1, pygame.K_UP, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RETURN,
+        self.set_player_key_map(1, pygame.K_u, pygame.K_k, pygame.K_j, pygame.K_h, pygame.K_o, pygame.K_p)
+        self.set_player_key_map(2, pygame.K_UP, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RETURN,
                                 pygame.K_RSHIFT)
-        self.set_player_key_map(2, pygame.K_u, pygame.K_k, pygame.K_j, pygame.K_h, pygame.K_o, pygame.K_p)
-        self.set_player_key_map(3, PlayerKeyMaps.MOUSE_CONTROL_UP, PlayerKeyMaps.MOUSE_CONTROL_RIGHT,
+        self.set_player_key_map(3, pygame.K_KP8, pygame.K_KP6, pygame.K_KP2, pygame.K_KP4, pygame.K_KP5, pygame.K_KP0)
+        self.set_player_key_map(4, PlayerKeyMaps.MOUSE_CONTROL_UP, PlayerKeyMaps.MOUSE_CONTROL_RIGHT,
                                 PlayerKeyMaps.MOUSE_CONTROL_DOWN, PlayerKeyMaps.MOUSE_CONTROL_LEFT,
                                 PlayerKeyMaps.MOUSE_CONTROL_BUTTON_L, PlayerKeyMaps.MOUSE_CONTROL_BUTTON_R)
-        self.set_player_key_map(4, pygame.K_KP8, pygame.K_KP6, pygame.K_KP2, pygame.K_KP4, pygame.K_KP5, pygame.K_KP0)
         self.set_special_key_map(pygame.K_ESCAPE)
 
     # ----------------------------------------------------------------------------
@@ -4191,18 +4318,18 @@ class MainMenu(Menu):
     # ----------------------------------------------------------------------------
 
     def __init__(self, sound_player: SoundPlayer):
-        super(MainMenu, self).__init__(sound_player)
+        super().__init__(sound_player)
 
         self.items = [(
             "Let's play!",
             "Tweak some stuff",
-            "What's this about",
+            "What's this about?",
             "Run away!")]
 
     # ----------------------------------------------------------------------------
 
     def action_pressed(self, action: int) -> None:
-        super(MainMenu, self).action_pressed(action)
+        super().action_pressed(action)
         self.prompt_if_needed((3, 0))
 
 
@@ -4213,7 +4340,7 @@ class ResultMenu(Menu):
     # ----------------------------------------------------------------------------
 
     def __init__(self, sound_player: SoundPlayer):
-        super(ResultMenu, self).__init__(sound_player)
+        super().__init__(sound_player)
 
         self.items = [["I get it"]]
 
@@ -4242,19 +4369,8 @@ class ResultMenu(Menu):
         if len(winner_team_numbers) == 1:
             announcement_text = "Winner team is " + Renderer.colored_color_name(winner_team_numbers[0]) + "!"
         else:
-            announcement_text = "Winners teams are: "
-
-            first = True
-
-            for winner_number in winner_team_numbers:
-                if first:
-                    first = False
-                else:
-                    announcement_text += ", "
-
-                announcement_text += Renderer.colored_color_name(winner_team_numbers[winner_number])
-
-            announcement_text += "!"
+            announcement_text = "Draw game! Participants: "
+            announcement_text += ", ".join(map(lambda number: Renderer.colored_color_name(number), winner_team_numbers))
 
         self.text = announcement_text + "\n" + separator + "\n"
 
@@ -4296,13 +4412,13 @@ class PlayMenu(Menu):
     # ----------------------------------------------------------------------------
 
     def __init__(self, sound_player: SoundPlayer):
-        super(PlayMenu, self).__init__(sound_player)
+        super().__init__(sound_player)
         self.items = [("resume", "to main menu")]
 
     # ----------------------------------------------------------------------------
 
     def action_pressed(self, action: int) -> None:
-        super(PlayMenu, self).action_pressed(action)
+        super().action_pressed(action)
         self.prompt_if_needed((1, 0))
 
 
@@ -4318,8 +4434,8 @@ class SettingsMenu(Menu):
     game : Game
     """
 
-    COLOR_ON = "^#1DF53A"
-    COLOR_OFF = "^#F51111"
+    COLOR_ON = ColorInfoW().from_hex("1DF53A")
+    COLOR_OFF = ColorInfoW().from_hex("F51111")
 
     # ----------------------------------------------------------------------------
 
@@ -4332,38 +4448,38 @@ class SettingsMenu(Menu):
         settings : Settings
         game : Game
         """
-        super(SettingsMenu, self).__init__(sound_player)
+        super().__init__(sound_player)
         self.settings = settings
         self.game = game
         self.update_items()
 
-        # ----------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------
 
     def bool_to_str(self, bool_value: bool) -> str:
-        return SettingsMenu.COLOR_ON + "on" if bool_value else SettingsMenu.COLOR_OFF + "off"
+        return SettingsMenu.COLOR_ON.whex() + "on" if bool_value else SettingsMenu.COLOR_OFF.whex() + "off"
 
     # ----------------------------------------------------------------------------
 
     def update_items(self) -> None:
         self.items = [(
-            "sound volume: " + (SettingsMenu.COLOR_ON if self.settings.sound_is_on() else SettingsMenu.COLOR_OFF) + str(
+            "Sound volume: " + (SettingsMenu.COLOR_ON.whex() if self.settings.sound_is_on() else SettingsMenu.COLOR_OFF.whex()) + str(
                 int(self.settings.sound_volume * 10) * 10) + " %",
-            "music volume: " + (
-                SettingsMenu.COLOR_ON if self.settings.music_is_on() > 0.0 else SettingsMenu.COLOR_OFF) + str(
+            "Music volume: " + (
+                SettingsMenu.COLOR_ON.whex() if self.settings.music_is_on() > 0.0 else SettingsMenu.COLOR_OFF.whex()) + str(
                 int(self.settings.music_volume * 10) * 10) + " %",
-            "screen resolution: " + str(self.settings.screen_resolution[0]) + " x " + str(
+            "Screen resolution: " + str(self.settings.screen_resolution[0]) + " x " + str(
                 self.settings.screen_resolution[1]),
-            "fullscreen: " + self.bool_to_str(self.settings.fullscreen),
-            "allow control by mouse: " + self.bool_to_str(self.settings.control_by_mouse),
-            "configure controls",
-            "complete reset",
-            "back"
+            "Fullscreen: " + self.bool_to_str(self.settings.fullscreen),
+            "Allow control by mouse: " + self.bool_to_str(self.settings.control_by_mouse),
+            "Configure controls",
+            "Complete reset",
+            "<- Back"
         )]
 
-        # ----------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------
 
     def action_pressed(self, action: int) -> None:
-        super(SettingsMenu, self).action_pressed(action)
+        super().action_pressed(action)
 
         self.prompt_if_needed((6, 0))
 
@@ -4462,7 +4578,7 @@ class ControlsMenu(Menu):
         player_key_maps : PlayerKeyMaps
         game : Game
         """
-        super(ControlsMenu, self).__init__(sound_player)
+        super().__init__(sound_player)
         self.player_key_maps = player_key_maps
         self.game = game
         self.waiting_for_key = None  # if not None, this contains a tuple (player number, action) of action that is currently being remapped
@@ -4478,9 +4594,9 @@ class ControlsMenu(Menu):
     # ----------------------------------------------------------------------------
 
     def update_items(self) -> None:
-        self.items = [["go back"]]
+        self.items = [["<- Go back"]]
 
-        prompt_string = "press some key"
+        prompt_string = "Press any key"
 
         for i in range(Game.NUMBER_OF_CONTROLLED_PLAYERS):
             player_string = "p " + str(i + 1)
@@ -4498,7 +4614,7 @@ class ControlsMenu(Menu):
                 self.items[0] += [item_string]
 
         # add menu item
-        item_string = "open menu: "
+        item_string = "Open menu: "
 
         if self.waiting_for_key is not None and self.waiting_for_key[1] == PlayerKeyMaps.ACTION_MENU:
             item_string += prompt_string
@@ -4554,7 +4670,7 @@ class ControlsMenu(Menu):
     # ----------------------------------------------------------------------------
 
     def action_pressed(self, action: int) -> None:
-        super(ControlsMenu, self).action_pressed(action)
+        super().action_pressed(action)
 
         if self.waiting_for_key is not None:
             self.waiting_for_key = None
@@ -4588,13 +4704,13 @@ class AboutMenu(Menu):
     # ----------------------------------------------------------------------------
 
     def __init__(self, sound_player: SoundPlayer):
-        super(AboutMenu, self).__init__(sound_player)
+        super().__init__(sound_player)
         self.text = ("^#2E44BFBombman^#FFFFFF - free Bomberman clone, ^#4EF259version " + Game.VERSION_STR + "\n"
                      "Original code:\n\n"
                      "Miloslav \"tastyfish\" Ciz, 2016\n\n"
                      "Python 3 port and update:\n\n"
                      "Petr \"Kalanis\" Plsek, 2024\n\n"
-                     "This game is free software, published under CC-0 1.0.\n"
+                     "This game is free software, published under CC-BY-SA 1.0.\n"
                      )
         self.items = [["Ok, nice, back"]]
 
@@ -4613,7 +4729,7 @@ class MapSelectMenu(Menu):
     # ----------------------------------------------------------------------------
 
     def __init__(self, sound_player: SoundPlayer):
-        super(MapSelectMenu, self).__init__(sound_player)
+        super().__init__(sound_player)
         self.text = "Now select a map."
         self.map_filenames = []
         self.update_items()
@@ -4624,10 +4740,10 @@ class MapSelectMenu(Menu):
         self.map_filenames = sorted([filename for filename in os.listdir(Game.MAP_PATH) if
                                      os.path.isfile(os.path.join(Game.MAP_PATH, filename))])
 
-        special_color = (100, 100, 255)
+        special_color = ColorInfo(100, 100, 255)
 
-        self.items = [["^" + Renderer.rgb_to_html_notation(special_color) + "pick random",
-                       "^" + Renderer.rgb_to_html_notation(special_color) + "each game random"]]
+        self.items = [[Renderer.to_html_notation(special_color) + "pick random",
+                       Renderer.to_html_notation(special_color) + "each game random"]]
 
         for filename in self.map_filenames:
             self.items[0].append(filename)
@@ -4679,7 +4795,7 @@ class PlaySetupMenu(Menu):
     # ----------------------------------------------------------------------------
 
     def __init__(self, sound_player: SoundPlayer, play_setup: PlaySetup):
-        super(PlaySetupMenu, self).__init__(sound_player)
+        super().__init__(sound_player)
         self.selected_item = (0, 1)
         self.play_setup = play_setup
         self.update_items()
@@ -4687,16 +4803,16 @@ class PlaySetupMenu(Menu):
     # ----------------------------------------------------------------------------
 
     def update_items(self) -> None:
-        self.items = [[], [], ["games: " + str(self.play_setup.get_number_of_games())]]
+        self.items = [[], [], ["Games: " + str(self.play_setup.get_number_of_games())]]
 
-        dark_grey = (50, 50, 50)
+        dark_grey = ColorInfo(50, 50, 50)
 
-        self.items[0].append("back")
-        self.items[1].append("next")
+        self.items[0].append("<- Back")
+        self.items[1].append("Next ->")
 
         for i in range(10):
-            slot_color = Renderer.COLOR_RGB_VALUES[
-                i] if i != Game.COLOR_BLACK else dark_grey  # black with black border not visible, use dark grey
+            # black with black border is not visible, use dark grey
+            slot_color = Renderer.COLOR_RGB_VALUES[i] if i != Game.COLOR_BLACK else dark_grey
 
             self.items[0].append(Renderer.colored_text(i, str(i + 1)) + ": ")
 
@@ -4707,13 +4823,13 @@ class PlaySetupMenu(Menu):
                 self.items[1].append("-")
             else:
                 team_color = Renderer.COLOR_RGB_VALUES[slot.get_team_number()] if slot.get_team_number() != Game.COLOR_BLACK else dark_grey
-                self.items[0][-1] += ("player " + str(slot.get_player_number() + 1)) if slot.get_player_number() >= 0 else "AI"
+                self.items[0][-1] += ("Player " + str(slot.get_player_number() + 1)) if slot.get_player_number() >= 0 else "AI"
                 self.items[1].append(Renderer.colored_text(slot.get_team_number(), str(slot.get_team_number() + 1)))  # team number
 
     # ----------------------------------------------------------------------------
 
     def action_pressed(self, action: int) -> None:
-        super(PlaySetupMenu, self).action_pressed(action)
+        super().action_pressed(action)
 
         if action == PlayerKeyMaps.ACTION_UP:
             if self.selected_item == (0, 2):
@@ -4742,7 +4858,7 @@ class PlaySetupMenu(Menu):
 
                     slots[self.selected_item[0] - 1] = PlayerInfo(
                         new_value, slot.get_team_number() if slot is not None else self.selected_item[0] - 1
-                    ) if new_value <= 3 else None
+                    ) if new_value < Game.NUMBER_OF_CONTROLLED_PLAYERS else None
                 else:
                     # changing teams
 
@@ -4794,16 +4910,16 @@ class Renderer:
     """
 
     COLOR_RGB_VALUES = [
-        (210, 210, 210),  # white
-        (10, 10, 10),  # black
-        (255, 0, 0),  # red
-        (0, 0, 255),  # blue
-        (0, 255, 0),  # green
-        (52, 237, 250),  # cyan
-        (255, 255, 69),  # yellow
-        (255, 192, 74),  # orange
-        (168, 127, 56),  # brown
-        (209, 117, 206)  # purple
+        ColorInfo(210, 210, 210),  # white
+        ColorInfo(10, 10, 10),  # black
+        ColorInfo(255, 0, 0),  # red
+        ColorInfo(0, 0, 255),  # blue
+        ColorInfo(0, 255, 0),  # green
+        ColorInfo(52, 237, 250),  # cyan
+        ColorInfo(255, 255, 69),  # yellow
+        ColorInfo(255, 192, 74),  # orange
+        ColorInfo(168, 127, 56),  # brown
+        ColorInfo(209, 117, 206)  # purple
     ]
 
     MAP_TILE_WIDTH = 50  ##< tile width in pixels
@@ -4826,7 +4942,7 @@ class Renderer:
     FONT_SMALL_SIZE = 12
     FONT_NORMAL_SIZE = 25
     MENU_LINE_SPACING = 10
-    MENU_FONT_COLOR = (255, 255, 255)
+    MENU_FONT_COLOR = ColorInfo(255, 255, 255)
 
     SCROLLBAR_RELATIVE_POSITION = (-200, -50)
     SCROLLBAR_HEIGHT = 300
@@ -4958,8 +5074,8 @@ class Renderer:
         self.gui_images["arrow down"] = pygame.image.load(os.path.join(Game.RESOURCE_PATH, "gui_arrow_down.png"))
         self.gui_images["seeker"] = pygame.image.load(os.path.join(Game.RESOURCE_PATH, "gui_seeker.png"))
         self.gui_images["cursor"] = pygame.image.load(os.path.join(Game.RESOURCE_PATH, "gui_cursor.png"))
-        self.gui_images["prompt"] = self.render_text(self.font_normal, "You sure?", (255, 255, 255))
-        self.gui_images["version"] = self.render_text(self.font_small, "v " + Game.VERSION_STR, (0, 100, 0))
+        self.gui_images["prompt"] = self.render_text(self.font_normal, "You sure?", ColorInfo(255, 255, 255))
+        self.gui_images["version"] = self.render_text(self.font_small, "v " + Game.VERSION_STR, ColorInfo(0, 100, 0))
 
         self.player_info_board_images = [None for i in range(10)]  # up to date infoboard image for each player
 
@@ -5021,19 +5137,19 @@ class Renderer:
                                                                   7, ".png", 7)
 
         self.party_circles = []  ##< holds info about party cheat circles, list of tuples in format (coords,radius,color,phase,speed)
-        self.party_circles.append(((-180, 110), 40, (255, 100, 50), 0.0, 1.0))
-        self.party_circles.append(((160, 70), 32, (100, 200, 150), 1.4, 1.5))
-        self.party_circles.append(((40, -150), 65, (150, 100, 170), 2.0, 0.7))
-        self.party_circles.append(((-170, -92), 80, (200, 200, 32), 3.2, 1.3))
-        self.party_circles.append(((50, 110), 63, (10, 180, 230), 0.1, 1.8))
-        self.party_circles.append(((205, -130), 72, (180, 150, 190), 0.5, 2.0))
+        self.party_circles.append((Position(-180, 110).get_tuple(), 40, ColorInfo(255, 100, 50).get_tuple(), 0.0, 1.0))
+        self.party_circles.append((Position(160, 70).get_tuple(), 32, ColorInfo(100, 200, 150).get_tuple(), 1.4, 1.5))
+        self.party_circles.append((Position(40, -150).get_tuple(), 65, ColorInfo(150, 100, 170).get_tuple(), 2.0, 0.7))
+        self.party_circles.append((Position(-170, -92).get_tuple(), 80, ColorInfo(200, 200, 32).get_tuple(), 3.2, 1.3))
+        self.party_circles.append((Position(50, 110).get_tuple(), 63, ColorInfo(10, 180, 230).get_tuple(), 0.1, 1.8))
+        self.party_circles.append((Position(205, -130).get_tuple(), 72, ColorInfo(180, 150, 190).get_tuple(), 0.5, 2.0))
 
         self.party_players = []  ##< holds info about party cheat players, list of tuples in format (coords,color index,millisecond delay, rotate right)
-        self.party_players.append(((-230, 80), 0, 0, True))
-        self.party_players.append(((180, 10), 2, 220, False))
-        self.party_players.append(((90, -150), 4, 880, True))
-        self.party_players.append(((-190, -95), 6, 320, False))
-        self.party_players.append(((-40, 110), 8, 50, True))
+        self.party_players.append((Position(-230, 80).get_tuple(), 0, 0, True))
+        self.party_players.append((Position(180, 10).get_tuple(), 2, 220, False))
+        self.party_players.append((Position(90, -150).get_tuple(), 4, 880, True))
+        self.party_players.append((Position(-190, -95).get_tuple(), 6, 320, False))
+        self.party_players.append((Position(-40, 110).get_tuple(), 8, 50, True))
 
         self.party_bombs = []  ##< holds info about party bombs, list of lists in format [x,y,increment x,increment y]
         self.party_bombs.append([10, 30, 1, 1])
@@ -5055,26 +5171,27 @@ class Renderer:
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def rgb_to_html_notation(rgb_color: tuple) -> str:
+    def to_html_notation(rgb_color: ColorInfo) -> str:
         """
         Converts (r,g,b) tuple to html #rrggbb notation.
 
         Parameters
         ----------
-        rgb_color : tuple[int, int, int]
+        rgb_color : ColorInfo
 
         Return
         ------
         str
         """
-        return "#" + hex(rgb_color[0])[2:].zfill(2) + hex(rgb_color[1])[2:].zfill(2) + hex(rgb_color[2])[2:].zfill(2)
+        return "^#" + rgb_color.to_hex()
 
     # ----------------------------------------------------------------------------
 
     @staticmethod
     def colored_text(color_index: int, text: str) -> str:
-        return "^" + Renderer.rgb_to_html_notation(
-            Renderer.lighten_color(Renderer.COLOR_RGB_VALUES[color_index], 75)) + text + "^#FFFFFF"
+        return Renderer.to_html_notation(Renderer.lighten_color(Renderer.COLOR_RGB_VALUES[color_index], 75)) \
+               + text \
+               + Renderer.to_html_notation(ColorInfo(255, 255, 255))
 
     # ----------------------------------------------------------------------------
 
@@ -5107,9 +5224,9 @@ class Renderer:
                 pixel_color = result.get_at((i, j))
 
                 if pixel_color.r == 255 and pixel_color.g == 0 and pixel_color.b == 0:
-                    pixel_color.r = Renderer.COLOR_RGB_VALUES[color_number][0]
-                    pixel_color.g = Renderer.COLOR_RGB_VALUES[color_number][1]
-                    pixel_color.b = Renderer.COLOR_RGB_VALUES[color_number][2]
+                    pixel_color.r = Renderer.COLOR_RGB_VALUES[color_number].red
+                    pixel_color.g = Renderer.COLOR_RGB_VALUES[color_number].green
+                    pixel_color.b = Renderer.COLOR_RGB_VALUES[color_number].blue
                     result.set_at((i, j), pixel_color)
 
         return result
@@ -5212,44 +5329,38 @@ class Renderer:
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def darken_color(color: tuple, by_how_may: int) -> tuple:
+    def darken_color(color: ColorInfo, by_how_may: int) -> ColorInfo:
         """
 
         Parameters
         ----------
-        color : tuple[int, int, int]
+        color : ColorInfo
         by_how_may: int
 
         Return
         ------
-        tuple[int, int, int]
+        ColorInfo
         """
 
-        r = max(color[0] - by_how_may, 0)
-        g = max(color[1] - by_how_may, 0)
-        b = max(color[2] - by_how_may, 0)
-        return r, g, b
+        return color - by_how_may
 
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def lighten_color(color: tuple, by_how_may: int) -> tuple:
+    def lighten_color(color: ColorInfo, by_how_may: int) -> ColorInfo:
         """
 
         Parameters
         ----------
-        color : tuple[int, int, int]
+        color : ColorInfo
         by_how_may: int
 
         Return
         ------
-        tuple[int, int, int]
+        ColorInfo
         """
 
-        r = min(color[0] + by_how_may, 255)
-        g = min(color[1] + by_how_may, 255)
-        b = min(color[2] + by_how_may, 255)
-        return r, g, b
+        return color + by_how_may
 
     # ----------------------------------------------------------------------------
 
@@ -5312,9 +5423,9 @@ class Renderer:
             board_image = self.player_info_board_images[i]
 
             board_image.blit(self.gui_images["info board"], (0, 0))
-            board_image.blit(self.font_small.render(str(player.get_kills()), True, (0, 0, 0)), (45, 0))
-            board_image.blit(self.font_small.render(str(player.get_wins()), True, (0, 0, 0)), (65, 0))
-            board_image.blit(self.font_small.render(Game.COLOR_NAMES[i], True, Renderer.darken_color(Renderer.COLOR_RGB_VALUES[i], 100)), (4, 2))
+            board_image.blit(self.font_small.render(str(player.get_kills()), True, ColorInfo().get_tuple()), (45, 0))
+            board_image.blit(self.font_small.render(str(player.get_wins()), True, ColorInfo().get_tuple()), (65, 0))
+            board_image.blit(self.font_small.render(Game.COLOR_NAMES[i], True, Renderer.darken_color(Renderer.COLOR_RGB_VALUES[i], 100).get_tuple()), (4, 2))
 
             if player.is_dead():
                 board_image.blit(self.gui_images["out"], (15, 34))
@@ -5365,8 +5476,8 @@ class Renderer:
             self,
             font: pygame.font.Font,
             text_to_render: str,
-            color: tuple,
-            outline_color: tuple = (0, 0, 0),
+            color: ColorInfo,
+            outline_color: ColorInfo = ColorInfo(),
             center: bool = False
     ) -> pygame.surface.Surface:
         """
@@ -5376,8 +5487,8 @@ class Renderer:
         ----------
         font : pygame.font.Font
         text_to_render : str
-        color : tuple[int, int, int]
-        outline_color : tuple[int, int, int]
+        color : ColorInfo
+        outline_color : ColorInfo
         center : bool
 
         Return
@@ -5413,13 +5524,13 @@ class Renderer:
                 has_format = starts_with_format if first else True
                 first = False
 
-                text_color = color
+                text_color = color.get_tuple()
 
                 if has_format:
                     text_color = pygame.Color(subline[:7])
                     subline = subline[7:]
 
-                new_rendered_subline = font.render(subline, True, outline_color)  # create text with outline
+                new_rendered_subline = font.render(subline, True, outline_color.get_tuple())  # create text with outline
                 new_rendered_subline.blit(new_rendered_subline, (0, 2))
                 new_rendered_subline.blit(new_rendered_subline, (1, 0))
                 new_rendered_subline.blit(new_rendered_subline, (-1, 0))
@@ -5640,8 +5751,11 @@ class Renderer:
                     item_image = pygame.transform.scale(item_image, (
                     int(scale * item_image.get_size()[0]), int(scale * item_image.get_size()[1])))
                     x = xs[j] - item_image.get_size()[0] / 2
-                    pygame.draw.rect(result, (255, 0, 0), pygame.Rect(x - 4, y - 2, item_image.get_size()[0] + 8,
-                                                                      item_image.get_size()[1] + 4))
+                    pygame.draw.rect(
+                        result,
+                        ColorInfo(255, 0, 0).get_tuple(),
+                        pygame.Rect(x - 4, y - 2, item_image.get_size()[0] + 8, item_image.get_size()[1] + 4)
+                    )
 
                 result.blit(item_image, (x, y))
 
@@ -5674,8 +5788,17 @@ class Renderer:
             x = self.screen_center.get_col() - width / 2
             y = self.screen_center.get_row() - height / 2
 
-            pygame.draw.rect(result, (0, 0, 0), pygame.Rect(x, y, width, height))
-            pygame.draw.rect(result, (255, 255, 255), pygame.Rect(x, y, width, height), 1)
+            pygame.draw.rect(
+                result,
+                ColorInfo(0, 0, 0).get_tuple(),
+                pygame.Rect(x, y, width, height)
+            )
+            pygame.draw.rect(
+                result,
+                ColorInfo(255, 255, 255).get_tuple(),
+                pygame.Rect(x, y, width, height),
+                1
+            )
 
             text_image = pygame.transform.rotate(self.gui_images["prompt"], math.sin(pygame.time.get_ticks() / 100) * 5)
 
@@ -5739,25 +5862,25 @@ class Renderer:
 
                         if tile_special_object is None:
                             if tile_kind == MapTile.TILE_BLOCK:
-                                tile_color = (120, 120, 120)
+                                tile_color = ColorInfo(120, 120, 120)
                             elif tile_kind == MapTile.TILE_WALL:
-                                tile_color = (60, 60, 60)
+                                tile_color = ColorInfo(60, 60, 60)
                             else:  # floor
-                                tile_color = (230, 230, 230)
+                                tile_color = ColorInfo(230, 230, 230)
                         else:
                             if tile_special_object == MapTile.SPECIAL_OBJECT_LAVA:
-                                tile_color = (200, 0, 0)
-                            elif tile_special_object == MapTile.SPECIAL_OBJECT_TELEPORT_A or tile_special_object == MapTile.SPECIAL_OBJECT_TELEPORT_B:
-                                tile_color = (0, 0, 200)
+                                tile_color = ColorInfo(200, 0, 0)
+                            elif tile_special_object == MapTile.SPECIAL_OBJECT_TELEPORT_A \
+                                    or tile_special_object == MapTile.SPECIAL_OBJECT_TELEPORT_B:
+                                tile_color = ColorInfo(0, 0, 200)
                             elif tile_special_object == MapTile.SPECIAL_OBJECT_TRAMPOLINE:
-                                tile_color = (0, 200, 0)
+                                tile_color = ColorInfo(0, 200, 0)
                             elif tile_kind == MapTile.TILE_FLOOR:  # arrow
-                                tile_color = (200, 200, 0)
+                                tile_color = ColorInfo(200, 200, 0)
                             else:
-                                tile_color = (230, 230, 230)
+                                tile_color = ColorInfo(230, 230, 230)
 
-                        pygame.draw.rect(self.preview_map_image, tile_color,
-                                         pygame.Rect(pos_x, pos_y, tile_size, tile_size))
+                        pygame.draw.rect(self.preview_map_image, tile_color.get_tuple(), pygame.Rect(pos_x, pos_y, tile_size, tile_size))
 
                 starting_positions = temp_map.get_starting_positions()
 
@@ -5765,10 +5888,17 @@ class Renderer:
                     draw_position = (int(starting_positions[player_index].get_col()) * tile_size + tile_half_size,
                                      int(starting_positions[player_index].get_row()) * tile_size + tile_half_size)
 
-                    pygame.draw.rect(self.preview_map_image, tile_color,
-                                     pygame.Rect(pos_x, pos_y, tile_size, tile_size))
-                    pygame.draw.circle(self.preview_map_image, Renderer.COLOR_RGB_VALUES[player_index], draw_position,
-                                       tile_half_size)
+                    pygame.draw.rect(
+                        self.preview_map_image,
+                        tile_color.get_tuple(),
+                        pygame.Rect(pos_x, pos_y, tile_size, tile_size)
+                    )
+                    pygame.draw.circle(
+                        self.preview_map_image,
+                        Renderer.COLOR_RGB_VALUES[player_index].get_tuple(),
+                        draw_position,
+                        tile_half_size
+                    )
 
                 y = tile_size * GameMap.MAP_HEIGHT + map_info_border_size
                 column = 0
@@ -5781,8 +5911,11 @@ class Renderer:
 
                 x = starting_x
 
-                pygame.draw.rect(self.preview_map_image, (255, 255, 255),
-                                 pygame.Rect(x, y, Renderer.MAP_TILE_WIDTH, Renderer.MAP_TILE_HEIGHT))
+                pygame.draw.rect(
+                    self.preview_map_image,
+                    ColorInfo(255, 255, 255).get_tuple(),
+                    pygame.Rect(x, y, Renderer.MAP_TILE_WIDTH, Renderer.MAP_TILE_HEIGHT)
+                )
 
                 starting_items = temp_map.get_starting_items()
 
@@ -5857,7 +5990,7 @@ class Renderer:
         game_info_text = self.render_text(
             self.font_small,
             "game " + str(game_info.get_game_number()) + " of " + str(game_info.get_max_games()),
-            (255, 255, 255)
+            ColorInfo(255, 255, 255)
         )
 
         self.prerendered_map_background.blit(game_info_text, (
@@ -5879,7 +6012,7 @@ class Renderer:
 
         Return
         ------
-        tuple[pygame.surface.Surface or None, tuple[int, int], list[float], bool, list[pygame.surface.Surface]]
+        tuple[pygame.surface.Surface or None, Position, list[float], bool, list[pygame.surface.Surface]]
         """
 
         profiler.measure_start("map rend. player")
@@ -5952,12 +6085,12 @@ class Renderer:
 
         Return
         ------
-        tuple[pygame.surface.Surface, tuple[int, int], list[float], bool, list[pygame.surface.Surface]]
+        tuple[pygame.surface.Surface, Position, list[float], bool, list[pygame.surface.Surface]]
         """
 
         profiler.measure_start("map rend. bomb")
         sprite_center = Renderer.BOMB_SPRITE_CENTER
-        animation_frame = (bomb.time_of_existence / 100) % 4
+        animation_frame = int((bomb.time_of_existence / 100) % 4)
         relative_offset = [0, 0]
         overlay_images = []
 
@@ -7234,7 +7367,7 @@ class Game:
 
     # ----------------------------------------------------------------------------
 
-    def filter_out_disallowed_actions(self, actions: list) -> iter:
+    def filter_out_disallowed_actions(self, actions: list) -> list:
         """
         Filters a list of performed actions so that there are no actions of human players
         that are not participating in the game.
@@ -7245,18 +7378,17 @@ class Game:
 
         Return
         ------
-        iter[PlayerActions]
+        list[PlayerActions]
         """
         player_slots = self.play_setup.get_slots()
         # player_slots ->  # list ( PlayerInfo or None )
         # actions -> # list ( PlayerActions )
 
-        result = filter(
+        return list(filter(
             lambda a:
                 (player_slots[a.player] is not None and player_slots[a.player].player_number >= 0)
                 or (a.action == PlayerKeyMaps.ACTION_MENU),
-            actions)
-        return result
+            actions))
 
     # ----------------------------------------------------------------------------
 

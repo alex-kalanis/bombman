@@ -194,7 +194,7 @@ expected_bomb_time = bombman.Bomb.BOMB_EXPLODES_IN - 11 * dt
 assertion("bomb explodes in " + str(expected_bomb_time), bomb.time_until_explosion() == expected_bomb_time)
 assertion("bomb doesn't have detonator", not bomb.has_detonator())
 assertion("bomb hasn't exploded", not bomb.has_exploded)
-assertion("player tile position = (1,1)", player.get_tile_position() == (1, 1))
+assertion("player tile position = (1,1)", player.get_tile_position() == bombman.Position(1, 1))
 
 actions = [bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_UP)]
 
