@@ -100,8 +100,8 @@ import re
 # import time
 
 DEBUG_PROFILING = False
-DEBUG_FPS = False
-DEBUG_VERBOSE = False
+DEBUG_FPS = True
+DEBUG_VERBOSE = True
 
 
 # ------------------------------------------------------------------------------
@@ -204,8 +204,250 @@ class Profiler:
 
         return result
 
+# ==============================================================================
+
+
+class Coordinate:
+    """
+
+    Attributes
+    ----------
+    col : float
+    row : float
+    """
+
+    def __init__(self, col: float = 0.0, row: float = 0.0):
+        self.col = col
+        self.row = row
+
+    def get_col(self) -> float:  # pos[0]
+        return self.col
+
+    def get_row(self) -> float:  # pos[1]
+        return self.row
+
+    def from_tuple(self, coordinates: tuple):
+        """
+        Parameters
+        ----------
+        coordinates : tuple[float, float]
+
+        Return
+        ------
+        Coordinate
+        """
+        self.col, self.row = coordinates
+        self.col, self.row = float(self.col), float(self.row)
+        return self
+
+    def get_tuple(self) -> tuple:
+        """
+        Return
+        ------
+        tuple[float, float]
+        """
+        return self.col, self.row
+
+    def __add__(self, other):
+        if isinstance(other, Coordinate):
+            return Coordinate(float(self.get_col() + other.get_col()), float(self.get_row() + other.get_row()))
+        else:
+            return Coordinate(float(self.get_col() + other), float(self.get_row() + other))
+
+    def __sub__(self, other):
+        if isinstance(other, Coordinate):
+            return Coordinate(float(self.get_col() - other.get_col()), float(self.get_row() - other.get_row()))
+        else:
+            return Coordinate(float(self.get_col() - other), float(self.get_row() - other))
+
+    def __mul__(self, other):
+        if isinstance(other, Coordinate):
+            return Coordinate(float(self.get_col() * other.get_col()), float(self.get_row() * other.get_row()))
+        else:
+            return Coordinate(float(self.get_col() * other), float(self.get_row() * other))
+
+    def __gt__(self, other):
+        return isinstance(other, Coordinate) \
+            and ((
+                self.get_col() > other.get_col()
+                and self.get_row() >= other.get_row()
+            ) or (
+                self.get_col() >= other.get_col()
+                and self.get_row() > other.get_row()
+            ))
+
+    def __ge__(self, other):
+        return isinstance(other, Coordinate) \
+            and self.get_col() >= other.get_col() \
+            and self.get_row() >= other.get_row()
+
+    def __lt__(self, other):
+        return isinstance(other, Coordinate) \
+            and ((
+                self.get_col() < other.get_col()
+                and self.get_row() <= other.get_row()
+            ) or (
+                self.get_col() <= other.get_col()
+                and self.get_row() < other.get_row()
+            ))
+
+    def __le__(self, other):
+        return isinstance(other, Coordinate) \
+            and self.get_col() <= other.get_col() \
+            and self.get_row() <= other.get_row()
+
+    def __str__(self):
+        return "c[%s,%s]" % (self.col, self.row)
 
 # ==============================================================================
+
+
+class Position:
+    """
+
+    Attributes
+    ----------
+    col : int
+    row : int
+    """
+
+    def __init__(self, col: int = 0, row: int = 0):
+        self.col = col
+        self.row = row
+
+    def get_col(self) -> int:  # pos[0]
+        return self.col
+
+    def get_row(self) -> int:  # pos[1]
+        return self.row
+
+    def from_tuple(self, coordinates: tuple):
+        """
+        Parameters
+        ----------
+        coordinates : tuple[int, int]
+
+        Return
+        ------
+        Position
+        """
+        self.col, self.row = coordinates
+        self.col, self.row = int(self.col), int(self.row)
+        return self
+
+    def get_tuple(self) -> tuple:
+        """
+        Return
+        ------
+        tuple[int, int]
+        """
+        return self.col, self.row
+
+    def __add__(self, other):
+        if isinstance(other, (Position, Coordinate)):
+            return Position(int(self.get_col() + other.get_col()), int(self.get_row() + other.get_row()))
+        else:
+            return Position(int(self.get_col() + other), int(self.get_row() + other))
+
+    def __sub__(self, other):
+        if isinstance(other, (Position, Coordinate)):
+            return Position(int(self.get_col() - other.get_col()), int(self.get_row() - other.get_row()))
+        else:
+            return Position(int(self.get_col() - other), int(self.get_row() - other))
+
+    def __mul__(self, other):
+        if isinstance(other, (Position, Coordinate)):
+            return Position(int(self.get_col() * other.get_col()), int(self.get_row() * other.get_row()))
+        else:
+            return Position(int(self.get_col() * other), int(self.get_row() * other))
+
+    def __eq__(self, other):
+        return isinstance(other, Position) \
+            and self.get_col() == other.get_col() \
+            and self.get_row() == other.get_row()
+
+    def __gt__(self, other):
+        return isinstance(other, (Position, Coordinate)) \
+            and ((
+                self.get_col() > other.get_col()
+                and self.get_row() >= other.get_row()
+            ) or (
+                self.get_col() >= other.get_col()
+                and self.get_row() > other.get_row()
+            ))
+
+    def __ge__(self, other):
+        return isinstance(other, (Position, Coordinate)) \
+            and self.get_col() >= other.get_col() \
+            and self.get_row() >= other.get_row()
+
+    def __lt__(self, other):
+        return isinstance(other, (Position, Coordinate)) \
+            and ((
+                self.get_col() < other.get_col()
+                and self.get_row() <= other.get_row()
+            ) or (
+                self.get_col() <= other.get_col()
+                and self.get_row() < other.get_row()
+            ))
+
+    def __le__(self, other):
+        return isinstance(other, (Position, Coordinate)) \
+            and self.get_col() <= other.get_col() \
+            and self.get_row() <= other.get_row()
+
+    def __copy__(self):
+        return Position(self.get_col(), self.get_row())
+
+    def __str__(self):
+        return "p[%s,%s]" % (self.col, self.row)
+
+# ==============================================================================
+
+
+class GameInfo:
+    """
+
+    Attributes
+    ----------
+    game_number : int
+    max_games : int
+    """
+
+    def __init__(self, game_number: int = 0, max_games: int = 0):
+        self.game_number = game_number
+        self.max_games = max_games
+
+    def get_game_number(self) -> int:
+        return self.game_number
+
+    def get_max_games(self) -> int:
+        return self.max_games
+
+# ==============================================================================
+
+
+class PlayerInfo:
+    """
+
+    Attributes
+    ----------
+    player_number : int
+    team_number : int
+    """
+
+    def __init__(self, player_number: int = 0, team_number: int = 0):
+        self.player_number = player_number  # [0]
+        self.team_number = team_number  # [1]
+
+    def get_player_number(self) -> int:
+        return self.player_number
+
+    def get_team_number(self) -> int:
+        return self.team_number
+
+# ==============================================================================
+
 
 class MapTile:
     """
@@ -214,14 +456,14 @@ class MapTile:
     ----------
     kind : int
     flames : list[]
-    coordinates : tuple[int, int]
+    coordinates : Position
     to_be_destroyed : bool
         Flag that marks the tile to be destroyed after the flames go out.
     item : int or None
         Item that's present on the file
     special_object : int or None
         special object present on the tile, like trampoline or teleport
-    destination_teleport : int or None
+    destination_teleport : Position or None
         in case of special_object equal to SPECIAL_OBJECT_TELEPORT_A or SPECIAL_OBJECT_TELEPORT_B holds the destionation teleport tile coordinates
     """
 
@@ -240,11 +482,11 @@ class MapTile:
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, coordinates: tuple):
+    def __init__(self, coordinates: Position):
         """
         Parameters
         ----------
-        coordinates : tuple[int, int]
+        coordinates : Position
         """
 
         self.kind = MapTile.TILE_FLOOR
@@ -270,7 +512,7 @@ class PlaySetup:
 
     Attributes
     ----------
-    player_slots : list[tuple[int, int] or None]
+    player_slots : list[PlayerInfo or None]
         list of (player_number, team_color),
         negative player_number = AI, slot index ~ player color index
     """
@@ -283,14 +525,19 @@ class PlaySetup:
         self.number_of_games = 10
 
         # default setup, player 0 vs 3 AI players:
-        self.player_slots[0] = (0, 0)
-        self.player_slots[1] = (-1, 1)
-        self.player_slots[2] = (-1, 2)
-        self.player_slots[3] = (-1, 3)
+        self.player_slots[0] = PlayerInfo(0, 0)
+        self.player_slots[1] = PlayerInfo(-1, 1)
+        self.player_slots[2] = PlayerInfo(-1, 2)
+        self.player_slots[3] = PlayerInfo(-1, 3)
 
     # ----------------------------------------------------------------------------
 
     def get_slots(self) -> list:
+        """
+        Return
+        ------
+        list[PlayerInfo or None]
+        """
         return self.player_slots
 
     # ----------------------------------------------------------------------------
@@ -326,7 +573,7 @@ class GameMap:
     danger_map_is_up_to_date : bool
         to regenerate danger map only when needed
     tiles : list[list[MapTile]]
-    starting_positions : list[tuple[float, float]]
+    starting_positions : list[Coordinate]
         starting position for each player
     environment_name : str
     end_game_at : int
@@ -337,8 +584,7 @@ class GameMap:
     state : int
     winner_team : int
         if map state is GameMap.STATE_GAME_OVER, this holds the winning team (-1 = draw)
-    game_number : int
-    max_games : int
+    game_info : GameInfo
     earthquake_time_left : int
     time_from_start : int
         time in ms from the start of the map, the time increases with each update (so time spent in game menu is excluded)
@@ -402,7 +648,7 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def __init__(self, map_data: str, play_setup: PlaySetup, game_number: int, max_games: int, all_items_cheat:bool = False):
+    def __init__(self, map_data: str, play_setup: PlaySetup, game_info: GameInfo, all_items_cheat: bool = False):
         """
         Initialises a new map from map_data (string) and a PlaySetup object.
 
@@ -410,14 +656,13 @@ class GameMap:
         ----------
         map_data : str
         play_setup : PlaySetup
-        game_number : int
-        max_games : int
+        game_info : GameInfo
         all_items_cheat : bool, default=False
         """
         # make the tiles array:
         self.danger_map_is_up_to_date = False  # to regenerate danger map only when needed
         self.tiles = []
-        self.starting_positions = [(0.0, 0.0) for i in range(10)]  # starting position for each player
+        self.starting_positions = [Coordinate() for i in range(10)]  # starting position for each player
 
         map_data = map_data.replace(" ", "").replace("\n", "")  # get rid of white characters
 
@@ -432,8 +677,7 @@ class GameMap:
         self.state = GameMap.STATE_WAITING_TO_PLAY
         self.winner_team = -1  ##< if map state is GameMap.STATE_GAME_OVER, this holds the winning team (-1 = draw)
 
-        self.game_number = game_number
-        self.max_games = max_games
+        self.game_info = game_info
 
         self.earthquake_time_left = 0
 
@@ -456,7 +700,7 @@ class GameMap:
                 column = 0
                 self.tiles.append([])
 
-            tile = MapTile((column, line))
+            tile = MapTile(Position(column, line))
 
             if tile_character == "x":
                 tile.kind = MapTile.TILE_BLOCK
@@ -509,7 +753,7 @@ class GameMap:
             self.tiles[-1].append(tile)
 
             if tile_character.isdigit():
-                self.starting_positions[int(tile_character)] = (float(column), float(line))
+                self.starting_positions[int(tile_character)] = Coordinate(float(column), float(line))
 
             column += 1
 
@@ -538,7 +782,7 @@ class GameMap:
             if player_slots[i] is not None:
                 new_player = Player()
                 new_player.set_number(i)
-                new_player.set_team_number(player_slots[i][1])
+                new_player.set_team_number(player_slots[i].get_team_number())
                 new_player.move_to_tile_center(self.starting_positions[i])
                 self.players.append(new_player)
                 self.players_by_numbers[i] = new_player
@@ -578,15 +822,31 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def get_game_number_info(self) -> tuple:
+    def get_game_info(self) -> GameInfo:
         """
-        Returns a tuple (game number, max games).
+        Returns a game info class (contains game number and max games).
 
         Return
-        ----------
-        tuple[int, int]
+        ------
+        GameInfo
         """
-        return self.game_number, self.max_games
+        return self.game_info
+
+    # ----------------------------------------------------------------------------
+
+    def get_tile(self, tile_coordinates: Position) -> MapTile:
+        """
+        Returns a tile; it must already exist
+
+        Parameters
+        ----------
+        tile_coordinates : Position
+
+        Return
+        ------
+        MapTile
+        """
+        return self.tiles[tile_coordinates.get_row()][tile_coordinates.get_col()]
 
     # ----------------------------------------------------------------------------
 
@@ -605,14 +865,14 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def get_danger_value(self, tile_coordinates: tuple) -> int:
+    def get_danger_value(self, tile_coordinates: Position) -> int:
         """
         Efficiently (lazily) gets a danger value of given tile. Danger value says how much time in ms has will pass
         until there will be a fire at the tile.
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position
 
         Return
         ------
@@ -625,16 +885,16 @@ class GameMap:
         if not self.tile_is_withing_map(tile_coordinates):
             return 0  # never walk outside map
 
-        return self.danger_map[tile_coordinates[1]][tile_coordinates[0]]
+        return self.danger_map[tile_coordinates.get_row()][tile_coordinates.get_col()]
 
     # ----------------------------------------------------------------------------
 
-    def tile_has_lava(self, tile_coordinates: tuple) -> bool:
+    def tile_has_lava(self, tile_coordinates: Position) -> bool:
         """
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position
 
         Return
         ------
@@ -643,7 +903,7 @@ class GameMap:
         if not self.tile_is_withing_map(tile_coordinates):
             return False
 
-        return self.tiles[tile_coordinates[1]][tile_coordinates[0]].special_object == MapTile.SPECIAL_OBJECT_LAVA
+        return self.get_tile(tile_coordinates).special_object == MapTile.SPECIAL_OBJECT_LAVA
 
     # ----------------------------------------------------------------------------
 
@@ -672,13 +932,17 @@ class GameMap:
             if bomb.has_detonator():  # detonator = bad
                 time_until_explosion = 100
 
-            self.danger_map[bomb_tile[1]][bomb_tile[0]] = min(self.danger_map[bomb_tile[1]][bomb_tile[0]], time_until_explosion)
+            self.danger_map[bomb_tile.get_row()][bomb_tile.get_col()] = min(self.danger_map[bomb_tile.get_row()][bomb_tile.get_col()], time_until_explosion)
 
             # up                              right                            down                             left
-            position = [[bomb_tile[0], bomb_tile[1] - 1], [bomb_tile[0] + 1, bomb_tile[1]],
-                        [bomb_tile[0], bomb_tile[1] + 1], [bomb_tile[0] - 1, bomb_tile[1]]]
+            position = [
+                Position(bomb_tile.get_col(), bomb_tile.get_row() - 1),
+                Position(bomb_tile.get_col() + 1, bomb_tile.get_row()),
+                Position(bomb_tile.get_col(), bomb_tile.get_row() + 1),
+                Position(bomb_tile.get_col() - 1, bomb_tile.get_row())
+            ]
             flame_stop = [False, False, False, False]
-            tile_increment = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+            tile_increment = [Position(0, -1), Position(1, 0), Position(0, 1), Position(-1, 0)]
 
             for i in range(bomb.flame_length):
                 for direction in (0, 1, 2, 3):
@@ -691,10 +955,8 @@ class GameMap:
 
                     current_tile = position[direction]
 
-                    self.danger_map[current_tile[1]][current_tile[0]] = min(
-                        self.danger_map[current_tile[1]][current_tile[0]], time_until_explosion)
-                    position[direction][0] += tile_increment[direction][0]
-                    position[direction][1] += tile_increment[direction][1]
+                    self.danger_map[current_tile.get_row()][current_tile.get_col()] = min(self.danger_map[current_tile.get_row()][current_tile.get_col()], time_until_explosion)
+                    position[direction] += tile_increment[direction]
 
     def _update_danger_entry(self) -> list:
         allow = []
@@ -709,31 +971,31 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def add_animation_event(self, animation_event: int, coordinates: tuple) -> None:
+    def add_animation_event(self, animation_event: int, coordinates: Coordinate) -> None:
         """
 
         Parameters
         ----------
         animation_event : int
-        coordinates : tuple[int, int]
+        coordinates : Coordinate
         """
         self.animation_events.append((animation_event, coordinates))
 
     # ----------------------------------------------------------------------------
 
-    def get_tile_at(self, tile_coordinates: tuple) -> MapTile or None:
+    def get_tile_at(self, tile_coordinates: Position) -> MapTile or None:
         """
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position
 
         Return
         ------
         MapTile or None
         """
         if self.tile_is_withing_map(tile_coordinates):
-            return self.tiles[tile_coordinates[1]][tile_coordinates[0]]
+            return self.tiles[tile_coordinates.get_row()][tile_coordinates.get_col()]
 
         return None
 
@@ -797,30 +1059,12 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def tile_has_flame(self, tile_coordinates: tuple) -> bool:
+    def tile_has_flame(self, tile_coordinates: Position or Coordinate) -> bool:
         """
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
-
-        Return
-        ------
-        bool
-        """
-        if not self.tile_is_withing_map(tile_coordinates):
-            return False  # coordinates outside the map
-
-        return len(self.tiles[tile_coordinates[1]][tile_coordinates[0]].flames) >= 1
-
-    # ----------------------------------------------------------------------------
-
-    def tile_has_teleport(self, tile_coordinates: tuple) -> bool:
-        """
-
-        Parameters
-        ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position or Coordinate
 
         Return
         ------
@@ -831,16 +1075,36 @@ class GameMap:
         if not self.tile_is_withing_map(tile_coordinates):
             return False  # coordinates outside the map
 
-        return self.tiles[tile_coordinates[1]][tile_coordinates[0]].special_object in (MapTile.SPECIAL_OBJECT_TELEPORT_A, MapTile.SPECIAL_OBJECT_TELEPORT_B)
+        return len(self.get_tile(tile_coordinates).flames) >= 1
 
     # ----------------------------------------------------------------------------
 
-    def bomb_on_tile(self, tile_coordinates: tuple):
+    def tile_has_teleport(self, tile_coordinates: Position or Coordinate) -> bool:
         """
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position or Coordinate
+
+        Return
+        ------
+        bool
+        """
+        tile_coordinates = Positionable.position_to_tile(tile_coordinates)
+
+        if not self.tile_is_withing_map(tile_coordinates):
+            return False  # coordinates outside the map
+
+        return self.get_tile(tile_coordinates).special_object in (MapTile.SPECIAL_OBJECT_TELEPORT_A, MapTile.SPECIAL_OBJECT_TELEPORT_B)
+
+    # ----------------------------------------------------------------------------
+
+    def bomb_on_tile(self, tile_coordinates: Position or Coordinate):
+        """
+
+        Parameters
+        ----------
+        tile_coordinates : Position or Coordinate
 
         Return
         ------
@@ -855,13 +1119,13 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def tile_has_bomb(self, tile_coordinates: tuple) -> bool:
+    def tile_has_bomb(self, tile_coordinates: Position or Coordinate) -> bool:
         """
         Checks if there is a bomb at given tile (coordinates may be float or int).
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position or Coordinate
 
         Return
         ------
@@ -871,12 +1135,12 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def get_players_at_tile(self, tile_coordinates: tuple) -> list:
+    def get_players_at_tile(self, tile_coordinates: Position) -> list:
         """
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position
 
         Return
         ------
@@ -889,20 +1153,20 @@ class GameMap:
 
             if not player.is_dead() \
                     and not player.is_in_air() \
-                    and player_tile_position[0] == tile_coordinates[0] \
-                    and player_tile_position[1] == tile_coordinates[1]:
+                    and player_tile_position.get_col() == tile_coordinates.get_col() \
+                    and player_tile_position.get_row() == tile_coordinates.get_row():
                 result.append(player)
 
         return result
 
     # ----------------------------------------------------------------------------
 
-    def tile_has_player(self, tile_coordinates: tuple) -> int:
+    def tile_has_player(self, tile_coordinates: Position) -> int:
         """
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position
 
         Return
         ------
@@ -912,28 +1176,28 @@ class GameMap:
 
     # ----------------------------------------------------------------------------
 
-    def tile_is_withing_map(self, tile_coordinates: tuple) -> bool:
+    def tile_is_withing_map(self, tile_coordinates: Position) -> bool:
         """
         Checks if given tile coordinates are within the map boundaries.
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position
 
         Return
         ------
         bool
         """
-        return 0 <= tile_coordinates[0] <= GameMap.MAP_WIDTH - 1 and 0 <= tile_coordinates[1] <= GameMap.MAP_HEIGHT - 1
+        return 0 <= tile_coordinates.get_col() <= GameMap.MAP_WIDTH - 1 and 0 <= tile_coordinates.get_row() <= GameMap.MAP_HEIGHT - 1
 
     # ----------------------------------------------------------------------------
 
-    def tile_is_walkable(self, tile_coordinates: tuple) -> bool:
+    def tile_is_walkable(self, tile_coordinates: Position) -> bool:
         """
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position
 
         Return
         ------
@@ -942,20 +1206,20 @@ class GameMap:
         if not self.tile_is_withing_map(tile_coordinates):
             return False
 
-        tile = self.tiles[tile_coordinates[1]][tile_coordinates[0]]
+        tile = self.get_tile(tile_coordinates)
         return self.tile_is_withing_map(tile_coordinates) \
-            and (self.tiles[tile_coordinates[1]][tile_coordinates[0]].kind == MapTile.TILE_FLOOR or tile.to_be_destroyed) \
+            and (tile.kind == MapTile.TILE_FLOOR or tile.to_be_destroyed) \
             and not self.tile_has_bomb(tile_coordinates)
 
     # ----------------------------------------------------------------------------
 
-    def get_position_collision_type(self, position: tuple) -> int:
+    def get_position_collision_type(self, position: Position or Coordinate) -> int:
         """
         Gets a collision type (see class constants) for given float position.
 
         Parameters
         ----------
-        position : tuple[float, float]
+        position : Position or Coordinate
 
         Return
         ----------
@@ -966,32 +1230,32 @@ class GameMap:
         if not self.tile_is_walkable(tile_coordinates):
             return GameMap.COLLISION_TOTAL
 
-        position_within_tile = (position[0] % 1, position[1] % 1)
+        position_within_tile = (position.get_col() % 1, position.get_row() % 1)
 
         if position_within_tile[1] < GameMap.WALL_MARGIN_HORIZONTAL:
-            if not self.tile_is_walkable((tile_coordinates[0], tile_coordinates[1] - 1)):
+            if not self.tile_is_walkable(Position(tile_coordinates.get_col(), tile_coordinates.get_row() - 1)):
                 return GameMap.COLLISION_BORDER_UP
         elif position_within_tile[1] > 1.0 - GameMap.WALL_MARGIN_HORIZONTAL:
-            if not self.tile_is_walkable((tile_coordinates[0], tile_coordinates[1] + 1)):
+            if not self.tile_is_walkable(Position(tile_coordinates.get_col(), tile_coordinates.get_row() + 1)):
                 return GameMap.COLLISION_BORDER_DOWN
 
         if position_within_tile[0] < GameMap.WALL_MARGIN_VERTICAL:
-            if not self.tile_is_walkable((tile_coordinates[0] - 1, tile_coordinates[1])):
+            if not self.tile_is_walkable(Position(tile_coordinates.get_col() - 1, tile_coordinates.get_row())):
                 return GameMap.COLLISION_BORDER_LEFT
         elif position_within_tile[0] > 1.0 - GameMap.WALL_MARGIN_VERTICAL:
-            if not self.tile_is_walkable((tile_coordinates[0] + 1, tile_coordinates[1])):
+            if not self.tile_is_walkable(Position(tile_coordinates.get_col() + 1, tile_coordinates.get_row())):
                 return GameMap.COLLISION_BORDER_RIGHT
 
         return GameMap.COLLISION_NONE
 
     # ----------------------------------------------------------------------------
 
-    def bombs_on_tile(self, tile_coordinates: tuple) -> list:
+    def bombs_on_tile(self, tile_coordinates: Position or Coordinate) -> list:
         """
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position or Coordinate
 
         Return
         ------
@@ -1004,8 +1268,9 @@ class GameMap:
         for bomb in self.bombs:
             bomb_tile_position = bomb.get_tile_position()
 
-            if bomb.movement != Bomb.BOMB_FLYING and bomb_tile_position[0] == tile_coordinates[0] and \
-                    bomb_tile_position[1] == tile_coordinates[1]:
+            if bomb.movement != Bomb.BOMB_FLYING \
+                    and bomb_tile_position.get_col() == tile_coordinates.get_col() \
+                    and bomb_tile_position.get_row() == tile_coordinates.get_row():
                 result.append(bomb)
 
         return result
@@ -1041,16 +1306,21 @@ class GameMap:
         new_flame.player = bomb.player
         new_flame.direction = "all"
 
-        self.tiles[bomb_position[1]][bomb_position[0]].flames.append(new_flame)
+        self.get_tile(bomb_position).flames.append(new_flame)
 
         # information relevant to flame spreading in each direction:
 
         # up                    right                down                 left
-        axis_position = [bomb_position[1] - 1, bomb_position[0] + 1, bomb_position[1] + 1, bomb_position[0] - 1]
+        axis_position = [
+            bomb_position.get_row() - 1,
+            bomb_position.get_col() + 1,
+            bomb_position.get_row() + 1,
+            bomb_position.get_col() - 1
+        ]
         flame_stop = [False, False, False, False]
         map_limit = [0, GameMap.MAP_WIDTH - 1, GameMap.MAP_HEIGHT - 1, 0]
         increment = [-1, 1, 1, -1]
-        goes_horizontaly = [False, True, False, True]
+        goes_horizontally = [False, True, False, True]
         previous_flame = [None, None, None, None]
 
         # spread the flame in all 4 directions:
@@ -1069,16 +1339,16 @@ class GameMap:
                             (increment[direction] == 1 and axis_position[direction] <= map_limit[direction])):
                         # flame is inside the map here
 
-                        if goes_horizontaly[direction]:
-                            tile_for_flame = self.tiles[bomb_position[1]][axis_position[direction]]
+                        if goes_horizontally[direction]:
+                            tile_for_flame = self.get_tile(Position(axis_position[direction], bomb_position.get_row()))
                         else:
-                            tile_for_flame = self.tiles[axis_position[direction]][bomb_position[0]]
+                            tile_for_flame = self.get_tile(Position(bomb_position.get_col(), axis_position[direction]))
 
                         if tile_for_flame.kind == MapTile.TILE_WALL:
                             flame_stop[direction] = True
                         else:
                             new_flame2 = copy.copy(new_flame)
-                            new_flame2.direction = "horizontal" if goes_horizontaly[direction] else "vertical"
+                            new_flame2.direction = "horizontal" if goes_horizontally[direction] else "vertical"
                             tile_for_flame.flames.append(new_flame2)
 
                             previous_flame[direction] = new_flame2
@@ -1108,12 +1378,12 @@ class GameMap:
 
         for y in range(GameMap.MAP_HEIGHT):
             for x in range(GameMap.MAP_WIDTH):
-                tile = self.tiles[y][x]
+                tile = self.get_tile(Position(y, x))
 
                 if tile.kind == MapTile.TILE_FLOOR \
                         and tile.special_object is None \
                         and tile.item is None \
-                        and not self.tile_has_player((x, y)):
+                        and not self.tile_has_player(Position(x, y)):
                     possible_tiles.append(tile)
 
         for item in items:
@@ -1148,11 +1418,13 @@ class GameMap:
             bomb_position = bomb.get_position()
             bomb_tile = bomb.get_tile_position()
 
-            if bomb.movement != Bomb.BOMB_FLYING and bomb.time_of_existence > bomb.explodes_in + bomb.detonator_time:  # bomb explodes
+            if bomb.movement != Bomb.BOMB_FLYING \
+                    and bomb.time_of_existence > bomb.explodes_in + bomb.detonator_time:  # bomb explodes
                 self.bomb_explodes(bomb)
                 continue
-            elif bomb.movement != Bomb.BOMB_FLYING and self.tiles[bomb_tile[1]][
-                bomb_tile[0]].special_object == MapTile.SPECIAL_OBJECT_LAVA and bomb.is_near_tile_center():
+            elif bomb.movement != Bomb.BOMB_FLYING \
+                and self.get_tile(bomb_tile).special_object == MapTile.SPECIAL_OBJECT_LAVA \
+                    and bomb.is_near_tile_center():
                 self.bomb_explodes(bomb)
                 continue
             else:
@@ -1167,44 +1439,43 @@ class GameMap:
                         bomb_tile = bomb.get_tile_position()
                         self.add_sound_event(SoundPlayer.SOUND_EVENT_BOMB_PUT)
 
-                        if not self.tile_is_walkable(bomb_tile) or self.tile_has_player(
-                                bomb_tile) or self.tile_has_teleport(bomb_tile):
-                            destination_tile = (
-                            bomb_tile[0] + bomb.flight_info.direction[0], bomb_tile[1] + bomb.flight_info.direction[1])
-                            bomb.send_flying(destination_tile)
+                        if not (self.tile_is_walkable(bomb_tile)
+                                or self.tile_has_player(bomb_tile)
+                                or self.tile_has_teleport(bomb_tile)):
+                            bomb.send_flying(bomb_tile + bomb.flight_info.direction)
                         else:  # bomb lands
                             bomb.movement = Bomb.BOMB_NO_MOVEMENT
                             self.get_tile_at(bomb_tile).item = None
                 else:  # bomb rolling
                     if bomb.is_near_tile_center():
-                        object_at_tile = self.tiles[bomb_tile[1]][bomb_tile[0]].special_object
+                        object_at_tile = self.get_tile(bomb_tile).special_object
 
                         redirected = False
 
                         if object_at_tile == MapTile.SPECIAL_OBJECT_ARROW_UP and bomb.movement != Bomb.BOMB_ROLLING_UP:
                             bomb.movement = Bomb.BOMB_ROLLING_UP
-                            bomb.set_position((bomb_tile[0] + 0.5, bomb_tile[1]))  # aline with x axis
+                            bomb.set_position(Coordinate(bomb_tile.get_col() + 0.5, bomb_tile.get_row()))  # aline with x axis
                             redirected = True
                         elif object_at_tile == MapTile.SPECIAL_OBJECT_ARROW_RIGHT and bomb.movement != Bomb.BOMB_ROLLING_RIGHT:
                             bomb.movement = Bomb.BOMB_ROLLING_RIGHT
-                            bomb.set_position((bomb_position[0], bomb_tile[1] + 0.5))
+                            bomb.set_position(Coordinate(bomb_position.get_col(), bomb_tile.get_row() + 0.5))
                             redirected = True
                         elif object_at_tile == MapTile.SPECIAL_OBJECT_ARROW_DOWN and bomb.movement != Bomb.BOMB_ROLLING_DOWN:
                             bomb.movement = Bomb.BOMB_ROLLING_DOWN
-                            bomb.set_position((bomb_tile[0] + 0.5, bomb_position[1]))
+                            bomb.set_position(Coordinate(bomb_tile.get_col() + 0.5, bomb_position.get_row()))
                             redirected = True
                         elif object_at_tile == MapTile.SPECIAL_OBJECT_ARROW_LEFT and bomb.movement != Bomb.BOMB_ROLLING_LEFT:
                             bomb.movement = Bomb.BOMB_ROLLING_LEFT
-                            bomb.set_position((bomb_position[0], bomb_tile[1] + 0.5))
+                            bomb.set_position(Coordinate(bomb_position.get_col(), bomb_tile.get_row() + 0.5))
                             redirected = True
 
                         if redirected:
                             bomb_position = bomb.get_position()
 
-                    if self.tiles[bomb_tile[1]][bomb_tile[0]].item is not None:  # rolling bomb destroys items
-                        self.tiles[bomb_tile[1]][bomb_tile[0]].item = None
+                    if self.get_tile(bomb_tile).item is not None:  # rolling bomb destroys items
+                        self.get_tile(bomb_tile).item = None
 
-                    bomb_position_within_tile = (bomb_position[0] % 1, bomb_position[1] % 1)
+                    bomb_position_within_tile = Coordinate(bomb_position.get_col() % 1, bomb_position.get_row() % 1)
                     check_collision = False
                     forward_tile = None
                     distance_to_travel = dt / 1000.0 * Bomb.ROLLING_SPEED
@@ -1215,39 +1486,42 @@ class GameMap:
                     opposite_direction = Bomb.BOMB_NO_MOVEMENT
 
                     if bomb.movement == Bomb.BOMB_ROLLING_UP:
-                        bomb.set_position((bomb_position[0], bomb_position[1] - distance_to_travel))
+                        bomb.set_position(Coordinate(bomb_position.get_row(), bomb_position.get_col() - distance_to_travel))
                         opposite_direction = Bomb.BOMB_ROLLING_DOWN
 
-                        if helper_boundaries2[0] < bomb_position_within_tile[1] < helper_boundaries2[1]:
+                        if helper_boundaries2[0] < bomb_position_within_tile.get_row() < helper_boundaries2[1]:
                             check_collision = True
-                            forward_tile = (bomb_tile[0], bomb_tile[1] - 1)
+                            forward_tile = Position(bomb_tile.get_col(), bomb_tile.get_row() - 1)
 
                     elif bomb.movement == Bomb.BOMB_ROLLING_RIGHT:
-                        bomb.set_position((bomb_position[0] + distance_to_travel, bomb_position[1]))
+                        bomb.set_position(Coordinate(bomb_position.get_col() + distance_to_travel, bomb_position.get_row()))
                         opposite_direction = Bomb.BOMB_ROLLING_LEFT
 
-                        if helper_boundaries[0] < bomb_position_within_tile[0] < helper_boundaries[1]:
+                        if helper_boundaries[0] < bomb_position_within_tile.get_col() < helper_boundaries[1]:
                             check_collision = True
-                            forward_tile = (bomb_tile[0] + 1, bomb_tile[1])
+                            forward_tile = Position(bomb_tile.get_col() + 1, bomb_tile.get_row())
 
                     elif bomb.movement == Bomb.BOMB_ROLLING_DOWN:
-                        bomb.set_position((bomb_position[0], bomb_position[1] + distance_to_travel))
+                        bomb.set_position(Coordinate(bomb_position.get_col(), bomb_position.get_row() + distance_to_travel))
                         opposite_direction = Bomb.BOMB_ROLLING_UP
 
-                        if helper_boundaries[0] < bomb_position_within_tile[1] < helper_boundaries[1]:
+                        if helper_boundaries[0] < bomb_position_within_tile.get_row() < helper_boundaries[1]:
                             check_collision = True
-                            forward_tile = (bomb_tile[0], bomb_tile[1] + 1)
+                            forward_tile = Position(bomb_tile.get_col(), bomb_tile.get_row() + 1)
 
                     elif bomb.movement == Bomb.BOMB_ROLLING_LEFT:
-                        bomb.set_position((bomb_position[0] - distance_to_travel, bomb_position[1]))
+                        bomb.set_position(Coordinate(bomb_position.get_col() - distance_to_travel, bomb_position.get_row()))
                         opposite_direction = Bomb.BOMB_ROLLING_RIGHT
 
-                        if helper_boundaries2[0] < bomb_position_within_tile[0] < helper_boundaries2[1]:
+                        if helper_boundaries2[0] < bomb_position_within_tile.get_col() < helper_boundaries2[1]:
                             check_collision = True
-                            forward_tile = (bomb_tile[0] - 1, bomb_tile[1])
+                            forward_tile = Position(bomb_tile.get_col() - 1, bomb_tile.get_row())
 
-                    if check_collision and (not self.tile_is_walkable(forward_tile) or self.tile_has_player(
-                            forward_tile) or self.tile_has_teleport(forward_tile)):
+                    if check_collision and (
+                        not self.tile_is_walkable(forward_tile)
+                        or self.tile_has_player(forward_tile)
+                        or self.tile_has_teleport(forward_tile)
+                    ):
                         bomb.move_to_tile_center()
 
                         if bomb.has_spring:
@@ -1279,8 +1553,10 @@ class GameMap:
                 continue
 
             if release_disease_cloud and player.get_disease() != Player.DISEASE_NONE:
-                self.add_animation_event(Renderer.ANIMATION_EVENT_DISEASE_CLOUD,
-                                         Renderer.map_position_to_pixel_position(player.get_position(), (0, 0)))
+                self.add_animation_event(
+                    Renderer.ANIMATION_EVENT_DISEASE_CLOUD,
+                    Renderer.map_position_to_pixel_position(player.get_position(), Position())
+                )
 
             if self.winning_color == -1:
                 self.winning_color = player.get_team_number()
@@ -1288,10 +1564,11 @@ class GameMap:
                 self.game_is_over = False
 
             player_tile_position = player.get_tile_position()
-            player_tile = self.tiles[player_tile_position[1]][player_tile_position[0]]
+            player_tile = self.get_tile(player_tile_position)
 
-            if player.get_state() != Player.STATE_IN_AIR and player.get_state != Player.STATE_TELEPORTING and (
-                    self.tile_has_flame(player_tile.coordinates) or self.tile_has_lava(player_tile.coordinates)):
+            if player.get_state() != Player.STATE_IN_AIR \
+                and player.get_state != Player.STATE_TELEPORTING \
+                    and (self.tile_has_flame(player_tile.coordinates) or self.tile_has_lava(player_tile.coordinates)):
 
                 # if player immortality cheat isn't activated
                 if not (player.get_number() in immortal_player_numbers):
@@ -1318,8 +1595,8 @@ class GameMap:
                     player.move_to_tile_center(player.get_teleport_destination())
             elif player_tile.special_object == MapTile.SPECIAL_OBJECT_TRAMPOLINE and player.is_near_tile_center():
                 player.send_to_air(self)
-            elif (
-                    player_tile.special_object == MapTile.SPECIAL_OBJECT_TELEPORT_A or player_tile.special_object == MapTile.SPECIAL_OBJECT_TELEPORT_B) and player.is_near_tile_center():
+            elif player_tile.special_object in (MapTile.SPECIAL_OBJECT_TELEPORT_A, MapTile.SPECIAL_OBJECT_TELEPORT_B) \
+                    and player.is_near_tile_center():
                 player.teleport(self)
             elif player.get_disease() != Player.DISEASE_NONE:
                 players_at_tile = self.get_players_at_tile(player_tile_position)
@@ -1516,32 +1793,32 @@ class Positionable:
     ----------
     x : float
     y : float
-    position : tuple[float, float]
+    position : Coordinate
     """
 
     def __init__(self):
         self.x = 0.0
         self.y = 0.0
-        self.position = (0.0, 0.0)
+        self.position = Coordinate()
 
-    def set_position(self, position: tuple) -> None:
+    def set_position(self, position: Coordinate) -> None:
         """
         Set position
 
         Parameters
         ----------
-        position : tuple[float, float]
+        position : Coordinate
         """
-        self.x, self.y = position
+        self.x, self.y = position.get_tuple()
         self.position = position
 
-    def get_position(self) -> tuple:
+    def get_position(self) -> Coordinate:
         """
         Get position
 
         Returns
         -------
-        tuple[float, float]
+        Coordinate
         """
         return self.position
 
@@ -1551,54 +1828,54 @@ class Positionable:
 
         Returns
         -------
-        tuple[int, int, int, int]
+        tuple[Position, Position, Position, Position]
         """
         tile_coordinates = self.get_tile_position()
 
-        top = (tile_coordinates[0], tile_coordinates[1] - 1)
-        right = (tile_coordinates[0] + 1, tile_coordinates[1])
-        down = (tile_coordinates[0], tile_coordinates[1] + 1)
-        left = (tile_coordinates[0] - 1, tile_coordinates[1])
+        top = Position(tile_coordinates.get_col(), tile_coordinates.get_row() - 1)
+        right = Position(tile_coordinates.get_col() + 1, tile_coordinates.get_row())
+        down = Position(tile_coordinates.get_col(), tile_coordinates.get_row() + 1)
+        left = Position(tile_coordinates.get_col() - 1, tile_coordinates.get_row())
 
         return top, right, down, left
 
-    def get_tile_position(self) -> tuple:
+    def get_tile_position(self) -> Position:
         """
         Real tile positions
 
         Returns
         -------
-        tuple[int, int]
+        Position
         """
         return Positionable.position_to_tile(self.position)
 
-    def move_to_tile_center(self, tile_coordinates:tuple = None) -> None:
+    def move_to_tile_center(self, tile_coordinates: Coordinate or Position or None = None) -> None:
         """
         Moves the object to center of tile (if not specified, objects current tile is used).
 
         Parameters
         ----------
-        tile_coordinates : tuple[float, float] or None
+        tile_coordinates : Coordinate or Position or None, default=None
         """
         if tile_coordinates is not None:
             self.position = tile_coordinates
 
-        self.position = math.floor(self.position[0]) + 0.5, math.floor(self.position[1]) + 0.5
+        self.position = Coordinate(math.floor(self.position.get_col()) + 0.5, math.floor(self.position.get_row()) + 0.5)
 
     @staticmethod
-    def position_to_tile(position: tuple) -> tuple:
+    def position_to_tile(position: Coordinate or Position) -> Position:
         """
         Converts float position to integer tile position.
 
         Parameters
         ----------
-        position : tuple[float, float]
+        position : Coordinate or Position
 
-        Returns
-        ----------
-        tuple[int, int]
+        Return
+        ------
+        Position
         """
-        return int(math.floor(position[0])), int(math.floor(position[1]))
+        return Position(int(math.floor(position.get_col())), int(math.floor(position.get_row())))
 
     def is_near_tile_center(self) -> bool:
         """
@@ -1608,7 +1885,7 @@ class Positionable:
         -------
         bool
         """
-        position_within_tile = (self.position[0] % 1, self.position[1] % 1)
+        position_within_tile = (self.position.get_col() % 1, self.position.get_row() % 1)
 
         limit = 0.2
         limit2 = 1.0 - limit
@@ -1660,11 +1937,11 @@ class Player(Positionable):
         for how longer (in ms) the player will be in a state of throwing (only for visuals)
     state_backup : int
         used to restore previous state, for example after jump
-    jumping_from : tuple[int, int]
+    jumping_from : Position
         coordinates of a tile the player is jumping from
-    jumping_to : tuple[int, int]
+    jumping_to : Position
         coordinates of a tile the player is jumping to
-    teleporting_to : tuple[int, int]
+    teleporting_to : Position
     wait_for_tile_transition : bool
         used to stop the destination teleport from teleporting the player back immediatelly
     invincible : bool
@@ -1732,9 +2009,9 @@ class Player(Positionable):
         self.wait_for_bomb_release = False
         self.throwing_time_left = 0  ##< for how longer (in ms) the player will be in a state of throwing (only for visuals)
         self.state_backup = Player.STATE_IDLE_UP  ##< used to restore previous state, for example after jump
-        self.jumping_from = (0, 0)  ##< coordinates of a tile the player is jumping from
-        self.jumping_to = (0, 0)  ##< coordinates of a tile the player is jumping to
-        self.teleporting_to = (0, 0)
+        self.jumping_from = Position()  ##< coordinates of a tile the player is jumping from
+        self.jumping_to = Position()  ##< coordinates of a tile the player is jumping to
+        self.teleporting_to = Position()
         self.wait_for_tile_transition = False  ##< used to stop the destination teleport from teleporting the player back immediatelly
         self.invincible = False  ##< can be used to make the player immortal
         self.info_board_update_needed = True
@@ -1779,7 +2056,7 @@ class Player(Positionable):
 
     def wait_for_bomb_action_release(self) -> None:
         """
-        Makes the player not react to bomb key immediatelly, but only after it been released and pressed again.
+        Makes the player not react to bomb key immediately, but only after it been released and pressed again.
         """
         self.wait_for_bomb_release = True
 
@@ -1787,7 +2064,7 @@ class Player(Positionable):
 
     def wait_for_special_action_release(self) -> None:
         """
-        Makes the player not react to special key immediatelly, but only after it has been released and pressed again.
+        Makes the player not react to special key immediately, but only after it has been released and pressed again.
         """
         self.wait_for_special_release = True
 
@@ -1827,7 +2104,7 @@ class Player(Positionable):
             Renderer.ANIMATION_EVENT_RIP,
             Renderer.ANIMATION_EVENT_SKELETION))
 
-        game_map.add_animation_event(random_animation, Renderer.map_position_to_pixel_position(self.position, (0, -15)))
+        game_map.add_animation_event(random_animation, Renderer.map_position_to_pixel_position(self.position, Position(0, -15)))
         game_map.give_away_items(self.get_items())
 
     # ----------------------------------------------------------------------------
@@ -1938,15 +2215,15 @@ class Player(Positionable):
 
         # find a landing tile
 
-        for y in range(self.jumping_from[1] - 3, self.jumping_from[1] + 4):
-            for x in range(self.jumping_from[0] - 3, self.jumping_from[0] + 4):
-                tile = game_map.get_tile_at((x, y))
+        for y in range(self.jumping_from.get_row() - 3, self.jumping_from.get_row() + 4):
+            for x in range(self.jumping_from.get_col() - 3, self.jumping_from.get_col() + 4):
+                tile = game_map.get_tile_at(Position(x, y))
 
-                if (tile is not None) and game_map.tile_is_walkable((x, y)) and tile.special_object is None:
-                    landing_tiles.append((x, y))
+                if (tile is not None) and game_map.tile_is_walkable(Position(x, y)) and tile.special_object is None:
+                    landing_tiles.append(Position(x, y))
 
         if len(landing_tiles) == 0:  # this should practically not happen
-            self.jumping_to = (self.jumping_from[0], self.jumping_from[1] + 1)
+            self.jumping_to = Position(self.jumping_from.get_col(), self.jumping_from.get_row() + 1)
         else:
             self.jumping_to = random.choice(landing_tiles)
 
@@ -1959,23 +2236,23 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def get_teleport_destination(self) -> tuple:
+    def get_teleport_destination(self) -> Position:
         """
 
         Return
         ----------
-        tuple[int, int]
+        Position
         """
         return self.teleporting_to
 
     # ----------------------------------------------------------------------------
 
-    def get_jump_destination(self) -> tuple:
+    def get_jump_destination(self) -> Position:
         """
 
         Return
         ----------
-        tuple[int, int]
+        Position
         """
         return self.jumping_to
 
@@ -2105,18 +2382,18 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def lay_bomb(self, game_map: GameMap, tile_coordinates: tuple = None) -> None:
+    def lay_bomb(self, game_map: GameMap, tile_coordinates: Position or None = None) -> None:
         """
 
         Parameters
         ----------
         game_map : GameMap
-        tile_coordinates : tuple[float, float] or None
+        tile_coordinates : Position or None
         """
         new_bomb = Bomb(self)
 
         if tile_coordinates is not None:
-            new_bomb.set_position(tile_coordinates)
+            new_bomb.set_position(Coordinate(*tile_coordinates.get_tuple()))
             new_bomb.move_to_tile_center()
 
         game_map.add_bomb(new_bomb)
@@ -2223,7 +2500,7 @@ class Player(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def get_direction_vector(self) -> tuple:
+    def get_direction_vector(self) -> Position:
         """
         Gets a direction vector (x and y: 0, 1 or -1) depending on where the player is facing.
 
@@ -2232,25 +2509,23 @@ class Player(Positionable):
         tuple[int, int]
         """
         if self.state in [Player.STATE_WALKING_UP, Player.STATE_IDLE_UP]:
-            return 0, -1
+            return Position(0, -1)
         elif self.state in [Player.STATE_WALKING_RIGHT, Player.STATE_IDLE_RIGHT]:
-            return 1, 0
+            return Position(1, 0)
         elif self.state in [Player.STATE_WALKING_DOWN, Player.STATE_IDLE_DOWN]:
-            return 0, 1
+            return Position(0, 1)
         else:  # left
-            return -1, 0
+            return Position(-1, 0)
 
     # ----------------------------------------------------------------------------
 
-    def get_forward_tile_position(self) -> tuple:
+    def get_forward_tile_position(self) -> Position:
         """
         Return
         ----------
-        tuple[int, int]
+        Position
         """
-        direction_vector = self.get_direction_vector()
-        position = self.get_tile_position()
-        return (position[0] + direction_vector[0]), (position[1] + direction_vector[1])
+        return self.get_tile_position() + self.get_direction_vector()
 
     # ----------------------------------------------------------------------------
 
@@ -2279,27 +2554,29 @@ class Player(Positionable):
 
             if not moved:
                 if input_action == PlayerKeyMaps.ACTION_UP:
-                    self.position[1] -= distance_to_travel
+                    self.position -= Coordinate(distance_to_travel, 0.0)
                     self.state = Player.STATE_WALKING_UP
                     moved = True
                 elif input_action == PlayerKeyMaps.ACTION_DOWN:
-                    self.position[1] += distance_to_travel
+                    self.position += Coordinate(distance_to_travel, 0.0)
                     self.state = Player.STATE_WALKING_DOWN
                     moved = True
                 elif input_action == PlayerKeyMaps.ACTION_RIGHT:
-                    self.position[0] += distance_to_travel
+                    self.position += Coordinate(0.0, distance_to_travel)
                     self.state = Player.STATE_WALKING_RIGHT
                     moved = True
                 elif input_action == PlayerKeyMaps.ACTION_LEFT:
-                    self.position[0] -= distance_to_travel
+                    self.position -= Coordinate(0.0, distance_to_travel)
                     self.state = Player.STATE_WALKING_LEFT
                     moved = True
 
             if input_action == PlayerKeyMaps.ACTION_BOMB:
                 bomb_was_pressed = True
 
-                if not self.wait_for_bomb_release and self.bombs_left >= 1 and not game_map.tile_has_bomb(
-                        self.position) and not self.disease == Player.DISEASE_NO_BOMB:
+                if not self.wait_for_bomb_release \
+                        and self.bombs_left >= 1 \
+                        and not game_map.tile_has_bomb(self.position) \
+                        and not self.disease == Player.DISEASE_NO_BOMB:
                     self.putting_bomb = True
 
             if input_action == PlayerKeyMaps.ACTION_BOMB_DOUBLE:  # check multibomb
@@ -2312,8 +2589,8 @@ class Player(Positionable):
                 special_was_pressed = True
 
                 if not self.wait_for_special_release:
-                    while len(
-                            self.detonator_bombs) != 0:  # find a bomb to ddetonate (some may have exploded by themselves already)
+                    while len(self.detonator_bombs) != 0:
+                        # find a bomb to detonate (some may have exploded by themselves already)
                         self.info_board_update_needed = True
 
                         bomb_to_check = self.detonator_bombs.pop()
@@ -2364,32 +2641,30 @@ class Player(Positionable):
                 bomb_hit = game_map.bomb_on_tile(forward_tile)
 
                 if self.boxing:
-                    destination_tile = (
-                    forward_tile[0] + direction_vector[0] * 3, forward_tile[1] + direction_vector[1] * 3)
-                    bomb_hit.send_flying(destination_tile)
+                    bomb_hit.send_flying(forward_tile + (direction_vector * 3))
                     game_map.add_sound_event(SoundPlayer.SOUND_EVENT_KICK)
                 elif self.has_shoe:
                     # align the bomb in case of kicking an already moving bomb
                     bomb_position = bomb_hit.get_position()
 
-                    if bomb_movement == Bomb.BOMB_ROLLING_LEFT or bomb_movement == Bomb.BOMB_ROLLING_RIGHT:
-                        bomb_hit.set_position((bomb_position[0], math.floor(bomb_position[1]) + 0.5))
+                    if bomb_movement in (Bomb.BOMB_ROLLING_LEFT, Bomb.BOMB_ROLLING_RIGHT):
+                        bomb_hit.set_position(Coordinate(math.floor(bomb_position.get_col()) + 0.5, bomb_position.get_row()))
                     else:
-                        bomb_hit.set_position((math.floor(bomb_position[0]) + 0.5, bomb_position[1]))
+                        bomb_hit.set_position(Coordinate(math.floor(bomb_position.get_col()), bomb_position.get_row() + 0.5))
 
                     bomb_hit.movement = bomb_movement
                     game_map.add_sound_event(SoundPlayer.SOUND_EVENT_KICK)
 
     # ----------------------------------------------------------------------------
 
-    def __resolve_collisions(self, game_map: GameMap, distance_to_travel: float, previous_position: tuple) -> bool:
+    def __resolve_collisions(self, game_map: GameMap, distance_to_travel: float, previous_position: Coordinate) -> bool:
         """
 
         Parameters
         ----------
         game_map : GameMap
         distance_to_travel : float
-        previous_position : tuple[float, float]
+        previous_position : Coordinate
 
         Returns
         -------
@@ -2404,17 +2679,25 @@ class Player(Positionable):
         else:
             helper_mapping = {
                 GameMap.COLLISION_BORDER_UP: (
-                Player.STATE_WALKING_UP, [Player.STATE_WALKING_LEFT, Player.STATE_WALKING_RIGHT],
-                (0, distance_to_travel)),
+                    Player.STATE_WALKING_UP,
+                    [Player.STATE_WALKING_LEFT, Player.STATE_WALKING_RIGHT],
+                    Coordinate(distance_to_travel, 0.0)
+                ),
                 GameMap.COLLISION_BORDER_DOWN: (
-                Player.STATE_WALKING_DOWN, [Player.STATE_WALKING_LEFT, Player.STATE_WALKING_RIGHT],
-                (0, -1 * distance_to_travel)),
+                    Player.STATE_WALKING_DOWN,
+                    [Player.STATE_WALKING_LEFT, Player.STATE_WALKING_RIGHT],
+                    Coordinate(-1 * distance_to_travel, 0.0)
+                ),
                 GameMap.COLLISION_BORDER_RIGHT: (
-                Player.STATE_WALKING_RIGHT, [Player.STATE_WALKING_UP, Player.STATE_WALKING_DOWN],
-                (- 1 * distance_to_travel, 0)),
+                    Player.STATE_WALKING_RIGHT,
+                    [Player.STATE_WALKING_UP, Player.STATE_WALKING_DOWN],
+                    Coordinate(0.0, - 1 * distance_to_travel)
+                ),
                 GameMap.COLLISION_BORDER_LEFT: (
-                Player.STATE_WALKING_LEFT, [Player.STATE_WALKING_UP, Player.STATE_WALKING_DOWN],
-                (distance_to_travel, 0))
+                    Player.STATE_WALKING_LEFT,
+                    [Player.STATE_WALKING_UP, Player.STATE_WALKING_DOWN],
+                    Coordinate(0.0, distance_to_travel)
+                )
             }
 
             if collision_type in helper_mapping:
@@ -2424,8 +2707,7 @@ class Player(Positionable):
                     self.position = previous_position
                     collision_happened = True
                 elif self.state in helper_values[1]:  # walking along the border will shift the player sideways
-                    self.position[0] += helper_values[2][0]
-                    self.position[1] += helper_values[2][1]
+                    self.position += helper_values[2]
 
         return collision_happened
 
@@ -2463,8 +2745,6 @@ class Player(Positionable):
 
         self.throwing_time_left = max(0, self.throwing_time_left - dt)
 
-        self.position = list(self.position)  # in case position was tuple
-
         old_state = self.state
 
         if self.state in (Player.STATE_WALKING_UP, Player.STATE_IDLE_UP):
@@ -2476,7 +2756,7 @@ class Player(Positionable):
         else:
             self.state = Player.STATE_IDLE_LEFT
 
-        previous_position = tuple(copy.copy(self.position))  # in case of collision we save the previous position
+        previous_position = Coordinate(*self.position.get_tuple())  # in case of collision we save the previous position
 
         self.putting_bomb = False
         self.putting_multibomb = False
@@ -2521,9 +2801,7 @@ class Player(Positionable):
             if bomb_thrown is not None:
                 forward_tile = self.get_forward_tile_position()
                 direction_vector = self.get_direction_vector()
-                destination_tile = (
-                forward_tile[0] + direction_vector[0] * 3, forward_tile[1] + direction_vector[1] * 3)
-                bomb_thrown.send_flying(destination_tile)
+                bomb_thrown.send_flying(forward_tile + (direction_vector * 3))
                 self.wait_for_bomb_release = True
                 self.throwing_time_left = 200
 
@@ -2531,18 +2809,18 @@ class Player(Positionable):
             current_tile = self.get_tile_position()
 
             if self.state in (Player.STATE_WALKING_UP, Player.STATE_IDLE_UP):
-                tile_increment = (0, -1)
+                tile_increment = Position(0, -1)
             elif self.state in (Player.STATE_WALKING_RIGHT, Player.STATE_IDLE_RIGHT):
-                tile_increment = (1, 0)
+                tile_increment = Position(1, 0)
             elif self.state in (Player.STATE_WALKING_DOWN, Player.STATE_IDLE_DOWN):
-                tile_increment = (0, 1)
+                tile_increment = Position(0, 1)
             else:  # left
-                tile_increment = (-1, 0)
+                tile_increment = Position(-1, 0)
 
             i = 1
 
             while self.bombs_left > 0:
-                next_tile = (current_tile[0] + i * tile_increment[0], current_tile[1] + i * tile_increment[1])
+                next_tile = current_tile + (tile_increment * i)
                 if not game_map.tile_is_walkable(next_tile) or game_map.tile_has_player(next_tile):
                     break
 
@@ -2577,14 +2855,14 @@ class BombFlightInfo:
         in tiles
     distance_travelled : int
         in tiles
-    direction : tuple[int, int]
-        in which direction the bomb is flying, 0, 1 or -1
+    direction : Position
+        in which direction the bomb is flying (or which axis will be incremented/decremented), 0, 1 or -1
     """
 
     def __init__(self):
         self.total_distance_to_travel = 0  ##< in tiles
         self.distance_travelled = 0  ##< in tiles
-        self.direction = (0, 0)  ##< in which direction the bomb is flying, 0, 1 or -1
+        self.direction = Position()  ##< in which direction the bomb is flying (or which axis will be incremented/decremented), 0, 1 or -1
 
 
 # ==============================================================================
@@ -2645,17 +2923,18 @@ class Bomb(Positionable):
 
     # ----------------------------------------------------------------------------
 
-    def send_flying(self, destination_tile_coords: tuple) -> None:
+    def send_flying(self, destination_tile_coords: Coordinate or Position) -> None:
         """
         Sends the bomb flying from its currents position to given tile (can be outside the map boundaries, will fly over the border from the other side).
 
         Parameters
         ----------
-        destination_tile_coords : tuple[float, float]
+        destination_tile_coords : Coordinate or Position
         """
         self.movement = Bomb.BOMB_FLYING
 
-        current_tile = self.get_tile_position()
+        current_tile = self.get_tile_position().get_tuple()
+        destination_tile_coords = destination_tile_coords.get_tuple()
         self.flight_info.distance_travelled = 0
 
         axis = 1 if current_tile[0] == destination_tile_coords[0] else 0
@@ -2663,10 +2942,12 @@ class Bomb(Positionable):
         self.flight_info.total_distance_to_travel = abs(current_tile[axis] - destination_tile_coords[axis])
         direction = [0, 0]
         direction[axis] = -1 if current_tile[axis] > destination_tile_coords[axis] else 1
-        self.flight_info.direction = tuple(direction)
+        self.flight_info.direction.from_tuple(tuple(direction))
 
-        destination_tile_coords = (destination_tile_coords[0] % GameMap.MAP_WIDTH, destination_tile_coords[1] % GameMap.MAP_HEIGHT)
-        self.move_to_tile_center(destination_tile_coords)
+        self.move_to_tile_center(Coordinate(
+            destination_tile_coords[0] % GameMap.MAP_WIDTH,
+            destination_tile_coords[1] % GameMap.MAP_HEIGHT
+        ))
 
     # ----------------------------------------------------------------------------
 
@@ -3219,8 +3500,9 @@ class PlayerKeyMaps(StringSerializable):
         # check mouse control:
 
         if self.allow_mouse_control:
-            screen_center = (Renderer.get_screen_size()[0] / 2, Renderer.get_screen_size()[1] / 2)
-            mouse_position = pygame.mouse.get_pos(screen_center)
+            screen_center = (Renderer.get_screen_size().get_col() / 2, Renderer.get_screen_size().get_row() / 2)
+            pygame.mouse.set_pos(screen_center)
+            mouse_position = pygame.mouse.get_pos()
             pressed = pygame.mouse.get_pressed()
 
             current_time = pygame.time.get_ticks()
@@ -3534,6 +3816,14 @@ class SoundPlayer:
 
 # ==============================================================================
 
+class AnimationInstance:
+
+    def __init__(self, coord: Coordinate, tick: int):
+        self.coord = coord
+        self.tick = tick
+
+# ==============================================================================
+
 class Animation:
     """
     Info about animation
@@ -3543,7 +3833,7 @@ class Animation:
     framerate : float
     frame_time : float
     frame_images : list[pygame.surface.Surface]
-    playing_instances : list[tuple[tuple[int, int], int]]
+    playing_instances : list[AnimationInstance]
         A set of playing animations, it is a list of tuples in
         a format: (pixel_coordinates, started_playing).
     """
@@ -3560,22 +3850,24 @@ class Animation:
             self.frame_images.append(pygame.image.load(filename_prefix + str(i) + filename_postfix))
 
         self.playing_instances = []  ##< A set of playing animations, it is a list of tuples in
-        #  a format: (pixel_coordinates, started_playing).
 
     # ----------------------------------------------------------------------------
 
-    def play(self, coordinates: tuple) -> None:
+    def play(self, coordinates: Coordinate) -> None:
         """
         Convert center coordinates to top left coordinates:
 
         Parameters
         ----------
-        coordinates : tuple[int, int]
+        coordinates : Coordinate
         """
 
-        top_left = (coordinates[0] - self.frame_images[0].get_size()[0] / 2,
-                    coordinates[1] - self.frame_images[0].get_size()[1] / 2)
-        self.playing_instances.append((top_left, pygame.time.get_ticks()))
+        self.playing_instances.append(AnimationInstance(
+            Coordinate(
+                coordinates.get_col() - self.frame_images[0].get_size()[0] / 2,
+                coordinates.get_row() - self.frame_images[0].get_size()[1] / 2
+            ), pygame.time.get_ticks()
+        ))
 
     # ----------------------------------------------------------------------------
 
@@ -3590,13 +3882,13 @@ class Animation:
 
             playing_instance = self.playing_instances[i]
 
-            frame = int((time_now - playing_instance[1]) / self.frame_time)
+            frame = int((time_now - playing_instance.tick) / self.frame_time)
 
             if frame >= len(self.frame_images):
                 self.playing_instances.remove(playing_instance)
                 continue
 
-            surface.blit(self.frame_images[frame], playing_instance[0])
+            surface.blit(self.frame_images[frame], playing_instance.coord.get_tuple())
 
             i += 1
 
@@ -3874,10 +4166,10 @@ class MainMenu(Menu):
         super(MainMenu, self).__init__(sound_player)
 
         self.items = [(
-            "let's play!",
-            "tweak some stuff",
-            "what's this about",
-            "run away!")]
+            "Let's play!",
+            "Tweak some stuff",
+            "What's this about",
+            "Run away!")]
 
     # ----------------------------------------------------------------------------
 
@@ -4274,9 +4566,9 @@ class AboutMenu(Menu):
                      "Miloslav \"tastyfish\" Ciz, 2016\n\n"
                      "Python 3 port and update:\n\n"
                      "Petr \"Kalanis\" Plsek, 2024\n\n"
-                     "This game is free software, published under CC0 1.0.\n"
+                     "This game is free software, published under CC-0 1.0.\n"
                      )
-        self.items = [["ok, nice, back"]]
+        self.items = [["Ok, nice, back"]]
 
 
 # ==============================================================================
@@ -4490,9 +4782,9 @@ class Renderer:
     MAP_TILE_HALF_WIDTH = MAP_TILE_WIDTH / 2
     MAP_TILE_HALF_HEIGHT = MAP_TILE_HEIGHT / 2
 
-    PLAYER_SPRITE_CENTER = (30, 80)  ##< player's feet (not geometrical) center of the sprite in pixels
-    BOMB_SPRITE_CENTER = (22, 33)
-    SHADOW_SPRITE_CENTER = (25, 22)
+    PLAYER_SPRITE_CENTER = Position(30, 80)  ##< player's feet (not geometrical) center of the sprite in pixels
+    BOMB_SPRITE_CENTER = Position(22, 33)
+    SHADOW_SPRITE_CENTER = Position(25, 22)
 
     MAP_BORDER_WIDTH = 37
 
@@ -4795,77 +5087,87 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    def tile_position_to_pixel_position(self, tile_position: tuple, center: tuple = (0, 0)) -> tuple:
+    def tile_position_to_pixel_position(
+            self,
+            tile_position: Position or Coordinate,
+            center: Position or Coordinate or None = None
+    ) -> Position:
         """
         Returns position of tile from pixel one
 
         Parameters
         ----------
-        tile_position : tuple[int, int]
-        center : tuple[int, int]
+        tile_position : Position or Coordinate
+        center : Position or Coordinate or None
 
         Return
         ------
-        tuple[int, int]
+        Position
         """
-        return (int(float(tile_position[0]) * Renderer.MAP_TILE_WIDTH) - center[0],
-                int(float(tile_position[1]) * Renderer.MAP_TILE_HEIGHT) - center[1])
+
+        if center is None:
+            center = Coordinate()
+
+        return Position(
+            int((tile_position.get_col() * Renderer.MAP_TILE_WIDTH) - center.get_col()),
+            int((tile_position.get_row() * Renderer.MAP_TILE_HEIGHT) - center.get_row())
+        )
 
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def get_screen_size() -> tuple:
+    def get_screen_size() -> Position:
         """
         Screen size
 
         Return
         ------
-        tuple[int, int]
+        Position
         """
 
         display = pygame.display.get_surface()
 
-        return display.get_size() if display is not None else (0, 0)
+        return Position().from_tuple(display.get_size()) if display is not None else Position()
 
     # ----------------------------------------------------------------------------
 
     @staticmethod
-    def get_map_render_position() -> tuple:
+    def get_map_render_position() -> Coordinate:
         """
-        Screen size
+        Position to render
 
         Return
         ------
-        tuple[int, int]
+        Coordinate
         """
 
         screen_size = Renderer.get_screen_size()
-        return (
-            (screen_size[0] - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_WIDTH * GameMap.MAP_WIDTH) / 2,
-            (screen_size[1] - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_HEIGHT * GameMap.MAP_HEIGHT - 50) / 2
+        return Coordinate(
+            (screen_size.get_col() - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_WIDTH * GameMap.MAP_WIDTH) / 2,
+            (screen_size.get_row() - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_HEIGHT * GameMap.MAP_HEIGHT - 50) / 2
         )
 
         # ----------------------------------------------------------------------------
 
     @staticmethod
-    def map_position_to_pixel_position(map_position: tuple, offset: tuple=(0, 0)) -> tuple:
+    def map_position_to_pixel_position(map_position: Coordinate, offset: Position) -> Coordinate:
         """
         Returns position of pixel on map
 
         Parameters
         ----------
-        map_position : tuple[int, int]
-        offset : tuple[int, int]
+        map_position : Coordinate
+        offset : Position
 
         Return
         ------
-        tuple[int, int]
+        Coordinate
         """
 
         map_render_location = Renderer.get_map_render_position()
-        return (
-            map_render_location[0] + int(map_position[0] * Renderer.MAP_TILE_WIDTH) + Renderer.MAP_BORDER_WIDTH + offset[0],
-            map_render_location[1] + int(map_position[1] * Renderer.MAP_TILE_HEIGHT) + Renderer.MAP_BORDER_WIDTH + offset[1]
+        return Coordinate(
+            map_render_location.get_col() + int(map_position.get_col() * Renderer.MAP_TILE_WIDTH) + Renderer.MAP_BORDER_WIDTH + offset.get_col(),
+            map_render_location.get_row() + int(map_position.get_row() * Renderer.MAP_TILE_HEIGHT) + Renderer.MAP_BORDER_WIDTH + offset.get_row()
         )
 
     def set_resolution(self, new_resolution: tuple) -> None:
@@ -5030,7 +5332,14 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    def render_text(self, font: pygame.font.Font, text_to_render: str, color: tuple, outline_color: tuple = (0, 0, 0), center: bool = False) -> pygame.surface.Surface:
+    def render_text(
+            self,
+            font: pygame.font.Font,
+            text_to_render: str,
+            color: tuple,
+            outline_color: tuple = (0, 0, 0),
+            center: bool = False
+    ) -> pygame.surface.Surface:
         """
         Renders text with outline, line breaks, formatting, etc.
 
@@ -5387,11 +5696,11 @@ class Renderer:
 
             with open(os.path.join(Game.MAP_PATH, map_filename)) as map_file:
                 map_data = map_file.read()
-                temp_map = GameMap(map_data, PlaySetup(), 0, 0)
+                temp_map = GameMap(map_data, PlaySetup(), GameInfo())
 
                 for y in range(GameMap.MAP_HEIGHT):
                     for x in range(GameMap.MAP_WIDTH):
-                        tile = temp_map.get_tile_at((x, y))
+                        tile = temp_map.get_tile_at(Position(x, y))
                         tile_kind = tile.kind
 
                         pos_x = x * tile_size
@@ -5498,7 +5807,7 @@ class Renderer:
                 self.prerendered_map_background.blit(self.environment_images[map_to_render.get_environment_name()][0],
                                                      render_position)
 
-                tile = map_to_render.get_tile_at((i, j))
+                tile = map_to_render.get_tile_at(Position(i, j))
 
                 helper_mapping = {
                     MapTile.SPECIAL_OBJECT_TELEPORT_A: image_teleport,
@@ -5514,14 +5823,17 @@ class Renderer:
                 if tile.special_object in helper_mapping:
                     self.prerendered_map_background.blit(helper_mapping[tile.special_object], render_position)
 
-        game_info = map_to_render.get_game_number_info()
+        game_info = map_to_render.get_game_info()
 
-        game_info_text = self.render_text(self.font_small, "game " + str(game_info[0]) + " of " + str(game_info[1]),
-                                          (255, 255, 255))
+        game_info_text = self.render_text(
+            self.font_small,
+            "game " + str(game_info.get_game_number()) + " of " + str(game_info.get_max_games()),
+            (255, 255, 255)
+        )
 
         self.prerendered_map_background.blit(game_info_text, (
-        (self.prerendered_map_background.get_size()[0] - game_info_text.get_size()[0]) / 2,
-        self.prerendered_map_background.get_size()[1] - game_info_text.get_size()[1]))
+            (self.prerendered_map_background.get_size()[0] - game_info_text.get_size()[0]) / 2,
+            self.prerendered_map_background.get_size()[1] - game_info_text.get_size()[1]))
 
         self.prerendered_map = map_to_render
 
@@ -5568,10 +5880,8 @@ class Renderer:
             int(scale * player_image.get_size()[0]), int(scale * player_image.get_size()[1])))
             draw_shadow = False
 
-            relative_offset[0] = -1 * (image_to_render.get_size()[0] / 2 - Renderer.PLAYER_SPRITE_CENTER[
-                0])  # offset caused by scale
-            relative_offset[1] = -1 * int(
-                math.sin(quotient * math.pi / 2.0) * Renderer.MAP_TILE_HEIGHT * GameMap.MAP_HEIGHT)  # height offset
+            relative_offset[0] = -1 * (image_to_render.get_size()[0] / 2 - Renderer.PLAYER_SPRITE_CENTER.get_col())  # offset caused by scale
+            relative_offset[1] = -1 * int(math.sin(quotient * math.pi / 2.0) * Renderer.MAP_TILE_HEIGHT * GameMap.MAP_HEIGHT)  # height offset
 
         elif player.is_teleporting():
             image_to_render = self.player_images[color_index][("up", "right", "down", "left")[animation_frame]]
@@ -5635,8 +5945,8 @@ class Renderer:
             helper_offset = -1 * bomb.flight_info.total_distance_to_travel + bomb.flight_info.distance_travelled
 
             relative_offset = [
-                int(bomb.flight_info.direction[0] * helper_offset * Renderer.MAP_TILE_WIDTH),
-                int(bomb.flight_info.direction[1] * helper_offset * Renderer.MAP_TILE_HALF_HEIGHT)]
+                int(bomb.flight_info.direction.get_col() * helper_offset * Renderer.MAP_TILE_WIDTH),
+                int(bomb.flight_info.direction.get_row() * helper_offset * Renderer.MAP_TILE_HALF_HEIGHT)]
 
             relative_offset[1] -= int(math.sin(
                 normalised_distance_travelled * math.pi) * bomb.flight_info.total_distance_to_travel * Renderer.MAP_TILE_HEIGHT / 2)  # height in air
@@ -5666,7 +5976,7 @@ class Renderer:
             self.__prerender_map(map_to_render)
 
         profiler.measure_start("map rend. backg.")
-        result.blit(self.prerendered_map_background, self.map_render_location)
+        result.blit(self.prerendered_map_background, self.map_render_location.get_tuple())
         profiler.measure_stop("map rend. backg.")
 
         # order the players and bombs by their y position so that they are drawn correctly
@@ -5675,9 +5985,11 @@ class Renderer:
         ordered_objects_to_render = []
         ordered_objects_to_render.extend(map_to_render.get_players())
         ordered_objects_to_render.extend(map_to_render.get_bombs())
+        # flying bombs are rendered above everything else
         ordered_objects_to_render.sort(
-            key=lambda what: 1000 if (isinstance(what, Bomb) and what.movement == Bomb.BOMB_FLYING) else
-            what.get_position()[1])  # flying bombs are rendered above everything else
+            key=lambda what:
+            1000 if (isinstance(what, Bomb) and what.movement == Bomb.BOMB_FLYING) else what.get_position().get_row()
+        )
         profiler.measure_stop("map rend. sort")
 
         # render the map by lines:
@@ -5685,7 +5997,7 @@ class Renderer:
         tiles = map_to_render.get_tiles()
         environment_images = self.environment_images[map_to_render.get_environment_name()]
 
-        y = Renderer.MAP_BORDER_WIDTH + self.map_render_location[1]
+        y = Renderer.MAP_BORDER_WIDTH + self.map_render_location.get_col()
         y_offset_block = Renderer.MAP_TILE_HEIGHT - environment_images[1].get_size()[1]
         y_offset_wall = Renderer.MAP_TILE_HEIGHT - environment_images[2].get_size()[1]
 
@@ -5696,7 +6008,7 @@ class Renderer:
 
         for line in tiles:
             x = (GameMap.MAP_WIDTH - 1) * Renderer.MAP_TILE_WIDTH + Renderer.MAP_BORDER_WIDTH + \
-                self.map_render_location[0]
+                self.map_render_location.get_col()
 
             while True:  # render players and bombs in the current line
                 if object_to_render_index >= len(ordered_objects_to_render):
@@ -5708,37 +6020,33 @@ class Renderer:
                     break
 
                 if isinstance(object_to_render, Player):
-                    image_to_render, sprite_center, relative_offset, draw_shadow, overlay_images = self.__get_player_render_info(
-                        object_to_render, map_to_render)
+                    image_to_render, sprite_center, relative_offset, draw_shadow, overlay_images = self.__get_player_render_info(object_to_render, map_to_render)
                 else:  # bomb
-                    image_to_render, sprite_center, relative_offset, draw_shadow, overlay_images = self.__get_bomb_render_info(
-                        object_to_render, map_to_render)
+                    image_to_render, sprite_center, relative_offset, draw_shadow, overlay_images = self.__get_bomb_render_info(object_to_render, map_to_render)
 
                 if image_to_render is None:
                     object_to_render_index += 1
                     continue
 
                 if draw_shadow:
-                    render_position = self.tile_position_to_pixel_position(object_to_render.get_position(),
-                                                                           Renderer.SHADOW_SPRITE_CENTER)
-                    render_position = (
-                        (render_position[0] + Renderer.MAP_BORDER_WIDTH + relative_offset[0]) %
-                        self.prerendered_map_background.get_size()[0] + self.map_render_location[0],
-                        render_position[1] + Renderer.MAP_BORDER_WIDTH + self.map_render_location[1]
+                    render_position = self.tile_position_to_pixel_position(object_to_render.get_position(), Renderer.SHADOW_SPRITE_CENTER)
+                    render_position = Coordinate(
+                        (render_position.get_col() + Renderer.MAP_BORDER_WIDTH + relative_offset[0]) % self.prerendered_map_background.get_size()[0] + self.map_render_location.get_col(),
+                        render_position.get_row() + Renderer.MAP_BORDER_WIDTH + self.map_render_location.get_row()
                     )
 
-                    result.blit(self.other_images["shadow"], render_position)
+                    result.blit(self.other_images["shadow"], render_position.get_tuple())
 
                 render_position = self.tile_position_to_pixel_position(object_to_render.get_position(), sprite_center)
-                render_position = ((render_position[0] + Renderer.MAP_BORDER_WIDTH + relative_offset[0]) %
-                                   self.prerendered_map_background.get_size()[0] + self.map_render_location[0],
-                                   render_position[1] + Renderer.MAP_BORDER_WIDTH + relative_offset[1] +
-                                   self.map_render_location[1])
+                render_position = Coordinate(
+                    (render_position.get_col() + Renderer.MAP_BORDER_WIDTH + relative_offset[0]) % self.prerendered_map_background.get_size()[0] + self.map_render_location.get_col(),
+                    render_position.get_row() + Renderer.MAP_BORDER_WIDTH + relative_offset[1] + self.map_render_location.get_row()
+                )
 
-                result.blit(image_to_render, render_position)
+                result.blit(image_to_render, render_position.get_tuple())
 
                 for additional_image in overlay_images:
-                    result.blit(additional_image, render_position)
+                    result.blit(additional_image, render_position.get_tuple())
 
                 object_to_render_index += 1
 
@@ -5764,8 +6072,7 @@ class Renderer:
 
                 profiler.measure_stop("map rend. tiles")
 
-            x = (GameMap.MAP_WIDTH - 1) * Renderer.MAP_TILE_WIDTH + Renderer.MAP_BORDER_WIDTH + \
-                self.map_render_location[0]
+            x = (GameMap.MAP_WIDTH - 1) * Renderer.MAP_TILE_WIDTH + Renderer.MAP_BORDER_WIDTH + self.map_render_location.get_col()
 
             y += Renderer.MAP_TILE_HEIGHT
             line_number += 1
@@ -5785,8 +6092,8 @@ class Renderer:
 
         players_by_numbers = map_to_render.get_players_by_numbers()
 
-        x = self.map_render_location[0] + 12
-        y = self.map_render_location[1] + self.prerendered_map_background.get_size()[1] + 20
+        x = self.map_render_location.get_col() + 12
+        y = self.map_render_location.get_row() + self.prerendered_map_background.get_size()[1] + 20
 
         for i in players_by_numbers:
             if players_by_numbers[i] is None or self.player_info_board_images[i] is None:
@@ -5827,6 +6134,19 @@ class Renderer:
     # ==============================================================================
 
 
+class NearbyPlayers:
+
+    def __init__(self, allies: int, enemies: int):
+        self.allies = allies
+        self.enemies = enemies
+
+    def __eq__(self, other):
+        return self.allies == other.allies \
+            and self.enemies == other.enemies
+
+    # ==============================================================================
+
+
 class AI:
     """
     AI behavior
@@ -5852,7 +6172,7 @@ class AI:
 
         # ----------------------------------------------------------------------------
 
-    def tile_is_escapable(self, tile_coordinates: tuple) -> bool:
+    def tile_is_escapable(self, tile_coordinates: Position) -> bool:
         if not self.game_map.tile_is_walkable(tile_coordinates) or self.game_map.tile_has_flame(tile_coordinates):
             return False
 
@@ -5865,7 +6185,7 @@ class AI:
 
     # ----------------------------------------------------------------------------
 
-    def decide_general_direction(self) -> tuple:
+    def decide_general_direction(self) -> Position:
         """
         Returns a two-number tuple of x, y coordinates, where x and y are either -1, 0 or 1,
         indicating a rough general direction in which to move in order to prevent AI from walking
@@ -5873,27 +6193,27 @@ class AI:
 
         Return
         ------
-        tuple[int, int]
+        Position
         """
         players = self.game_map.get_players()
 
-        enemy_players = filter(lambda p: p.is_enemy(self.player) and not p.is_dead(), players)
+        enemy_players = list(filter(lambda p: p.is_enemy(self.player) and not p.is_dead(), players))
         enemy_player = enemy_players[0] if len(enemy_players) > 0 else self.player
 
         my_tile_position = self.player.get_tile_position()
         another_player_tile_position = enemy_player.get_tile_position()
 
-        dx = another_player_tile_position[0] - my_tile_position[0]
-        dy = another_player_tile_position[1] - my_tile_position[1]
+        dx = another_player_tile_position.get_col() - my_tile_position.get_col()
+        dy = another_player_tile_position.get_row() - my_tile_position.get_row()
 
         dx = min(max(-1, dx), 1)
         dy = min(max(-1, dy), 1)
 
-        return dx, dy
+        return Position(dx, dy)
 
     # ----------------------------------------------------------------------------
 
-    def rate_bomb_escape_directions(self, tile_coordinates: tuple) -> tuple:
+    def rate_bomb_escape_directions(self, tile_coordinates: Position) -> tuple:
         """
         Rates all 4 directions from a specified tile (up, right, down, left) with a number that says how many
         possible safe tiles are there accesible in that direction in case a bomb is present on the specified tile.
@@ -5902,7 +6222,7 @@ class AI:
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position
 
         Return
         ------
@@ -5917,40 +6237,40 @@ class AI:
 
         for direction in (0, 1, 2, 3):
             for i in range(1, self.player.get_flame_length() + 2):
-                axis_tile = (tile_coordinates[0] + i * axis_directions[direction][0],
-                             tile_coordinates[1] + i * axis_directions[direction][1])
+                axis_tile = Position(tile_coordinates.get_col() + i * axis_directions[direction][0],
+                                     tile_coordinates.get_row() + i * axis_directions[direction][1])
 
                 if not self.tile_is_escapable(axis_tile):
                     break
 
-                perpendicular_tile1 = (axis_tile[0] + perpendicular_directions[direction][0],
-                                       axis_tile[1] + perpendicular_directions[direction][1])
-                perpendicular_tile2 = (axis_tile[0] - perpendicular_directions[direction][0],
-                                       axis_tile[1] - perpendicular_directions[direction][1])
+                perpendicular_tile1 = Position(axis_tile.get_col() + perpendicular_directions[direction][0],
+                                               axis_tile.get_row() + perpendicular_directions[direction][1])
+                perpendicular_tile2 = Position(axis_tile.get_col() - perpendicular_directions[direction][0],
+                                               axis_tile.get_row() - perpendicular_directions[direction][1])
 
-                if i > self.player.get_flame_length() and self.game_map.get_danger_value(
-                        axis_tile) >= GameMap.SAFE_DANGER_VALUE:
+                if i > self.player.get_flame_length() \
+                        and self.game_map.get_danger_value(axis_tile) >= GameMap.SAFE_DANGER_VALUE:
                     result[direction] += 1
 
-                if self.tile_is_escapable(perpendicular_tile1) and self.game_map.get_danger_value(
-                        perpendicular_tile1) >= GameMap.SAFE_DANGER_VALUE:
+                if self.tile_is_escapable(perpendicular_tile1) \
+                        and self.game_map.get_danger_value(perpendicular_tile1) >= GameMap.SAFE_DANGER_VALUE:
                     result[direction] += 1
 
-                if self.tile_is_escapable(perpendicular_tile2) and self.game_map.get_danger_value(
-                        perpendicular_tile2) >= GameMap.SAFE_DANGER_VALUE:
+                if self.tile_is_escapable(perpendicular_tile2) \
+                        and self.game_map.get_danger_value(perpendicular_tile2) >= GameMap.SAFE_DANGER_VALUE:
                     result[direction] += 1
 
         return tuple(result)
 
     # ----------------------------------------------------------------------------
 
-    def rate_tile(self, tile_coordinates: tuple) -> int:
+    def rate_tile(self, tile_coordinates: Position) -> int:
         """
         Returns an integer score in range 0 - 100 for given file (100 = good, 0 = bad).
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position
 
         Return
         ------
@@ -5979,13 +6299,15 @@ class AI:
             else:
                 score -= 10
 
-        top = (tile_coordinates[0], tile_coordinates[1] - 1)
-        right = (tile_coordinates[0] + 1, tile_coordinates[1])
-        down = (tile_coordinates[0], tile_coordinates[1] + 1)
-        left = (tile_coordinates[0] - 1, tile_coordinates[1])
+        top = Position(tile_coordinates.get_col(), tile_coordinates.get_row() - 1)
+        right = Position(tile_coordinates.get_col() + 1, tile_coordinates.get_row())
+        down = Position(tile_coordinates.get_col(), tile_coordinates.get_row() + 1)
+        left = Position(tile_coordinates.get_col() - 1, tile_coordinates.get_row())
 
-        if self.game_map.tile_has_lava(top) or self.game_map.tile_has_lava(right) or self.game_map.tile_has_lava(
-                down) or self.game_map.tile_has_lava(left):
+        if self.game_map.tile_has_lava(top) \
+                or self.game_map.tile_has_lava(right) \
+                or self.game_map.tile_has_lava(down) \
+                or self.game_map.tile_has_lava(left):
             score -= 5  # don't go near lava
 
         if self.game_map.tile_has_bomb(tile_coordinates):
@@ -6010,12 +6332,12 @@ class AI:
 
     # ----------------------------------------------------------------------------
 
-    def number_of_blocks_next_to_tile(self, tile_coordinates: tuple) -> int:
+    def number_of_blocks_next_to_tile(self, tile_coordinates: Position) -> int:
         """
 
         Parameters
         ----------
-        tile_coordinates : tuple[int, int]
+        tile_coordinates : Position
 
         Return
         ------
@@ -6023,8 +6345,8 @@ class AI:
         """
         count = 0
 
-        for tile_offset in ((0, -1), (1, 0), (0, 1), (-1, 0)):  # for each neigbour file
-            helper_tile = self.game_map.get_tile_at((tile_coordinates[0] + tile_offset[0], tile_coordinates[1] + tile_offset[1]))
+        for tile_offset in (Position(0, -1), Position(1, 0), Position(0, 1), Position(-1, 0)):  # for each neigbour file
+            helper_tile = self.game_map.get_tile_at(tile_coordinates + tile_offset)
 
             if (helper_tile is not None) and (helper_tile.kind == MapTile.TILE_BLOCK):
                 count += 1
@@ -6033,13 +6355,13 @@ class AI:
 
     # ----------------------------------------------------------------------------
 
-    def players_nearby(self) -> tuple:
+    def players_nearby(self) -> NearbyPlayers:
         """
         Returns a tuple in format: (nearby_enemies, nearby allies).
 
         Return
         ------
-        tuple[int, int]
+        NearbyPlayers
         """
         current_position = self.player.get_tile_position()
 
@@ -6052,14 +6374,14 @@ class AI:
 
             player_position = player.get_tile_position()
 
-            if abs(current_position[0] - player_position[0]) <= 1 and abs(
-                    current_position[1] - player_position[1]) <= 1:
+            if abs(current_position.get_col() - player_position.get_col()) <= 1 and abs(
+                    current_position.get_row() - player_position.get_row()) <= 1:
                 if player.is_enemy(self.player):
                     enemies += 1
                 else:
                     allies += 1
 
-        return enemies, allies
+        return NearbyPlayers(allies, enemies)
 
     # ----------------------------------------------------------------------------
 
@@ -6076,7 +6398,9 @@ class AI:
 
         current_time = self.game_map.get_map_time()
 
-        if current_time < self.recompute_compute_actions_on or self.player.get_state() == Player.STATE_IN_AIR or self.player.get_state() == Player.STATE_TELEPORTING:
+        if current_time < self.recompute_compute_actions_on \
+                or self.player.get_state() == Player.STATE_IN_AIR \
+                or self.player.get_state() == Player.STATE_TELEPORTING:
             return self.outputs  # only repeat actions
 
         # start decisions here:
@@ -6125,23 +6449,21 @@ class AI:
             general_direction = self.decide_general_direction()
 
             # up                     # right                     # down                     # left
-            tile_increment = ((0, -1), (1, 0), (0, 1), (-1, 0))
-            action = (
-            PlayerKeyMaps.ACTION_UP, PlayerKeyMaps.ACTION_RIGHT, PlayerKeyMaps.ACTION_DOWN, PlayerKeyMaps.ACTION_LEFT)
+            tile_increment = (Position(0, -1), Position(1, 0), Position(0, 1), Position(-1, 0))
+            action = (PlayerKeyMaps.ACTION_UP, PlayerKeyMaps.ACTION_RIGHT, PlayerKeyMaps.ACTION_DOWN, PlayerKeyMaps.ACTION_LEFT)
 
             # should I move up, right, down or left?
 
             for direction in (0, 1, 2, 3):
-                score = self.rate_tile(
-                    (current_tile[0] + tile_increment[direction][0], current_tile[1] + tile_increment[direction][1]))
+                score = self.rate_tile(current_tile + tile_increment[direction])
 
                 # count in the general direction
                 extra_score = 0
 
-                if tile_increment[direction][0] == general_direction[0]:
+                if tile_increment[direction].get_col() == general_direction.get_col():
                     extra_score += 2
 
-                if tile_increment[direction][1] == general_direction[1]:
+                if tile_increment[direction].get_row() == general_direction.get_row():
                     extra_score += 2
 
                 score += extra_score
@@ -6185,7 +6507,7 @@ class AI:
 
             players_near = self.players_nearby()
 
-            if players_near[0] > 0 and players_near[1] == 0:  # enemy nearby and no ally nearby
+            if players_near.enemies > 0 and players_near.allies == 0:  # enemy nearby and no ally nearby
                 chance_to_put_bomb = 5
             else:
                 block_tile_ratio = self.game_map.get_number_of_block_tiles() / float(
@@ -6280,7 +6602,7 @@ class AI:
                     multibomb_safe = False
                     break
 
-                current_tile = (current_tile[0] + direction_vector[0], current_tile[1] + direction_vector[1])
+                current_tile += direction_vector
 
             if multibomb_safe:
                 return True
@@ -6823,9 +7145,12 @@ class Game:
 
                 with open(os.path.join(Game.MAP_PATH, map_name_to_load)) as map_file:
                     map_data = map_file.read()
-                    self.game_map = GameMap(map_data, self.play_setup, self.game_number,
-                                            self.play_setup.get_number_of_games(),
-                                            self.cheat_is_active(Game.CHEAT_ALL_ITEMS))
+                    self.game_map = GameMap(
+                        map_data,
+                        self.play_setup,
+                        GameInfo(self.game_number, self.play_setup.get_number_of_games()),
+                        self.cheat_is_active(Game.CHEAT_ALL_ITEMS)
+                    )
 
                 player_slots = self.play_setup.get_slots()
 
