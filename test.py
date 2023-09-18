@@ -156,7 +156,7 @@ test_map.update(4000)
 assertion("map state = STATE_PLAYING", test_map.get_state() == bombman.GameMap.STATE_PLAYING)
 assertion("map time = 4800", test_map.get_map_time() == 4800)
 
-actions = [(0, bombman.PlayerKeyMaps.ACTION_RIGHT)]
+actions = [bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_RIGHT)]
 
 dt = 100
 
@@ -173,7 +173,7 @@ assertion("player 0 tile position = " + str(expected_position), player.get_tile_
 
 print("making player 0 lay bomb")
 
-actions = [(0, bombman.PlayerKeyMaps.ACTION_BOMB)]
+actions = [bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_BOMB)]
 player.react_to_inputs(actions, dt, test_map)
 test_map.update(dt)
 
@@ -182,7 +182,7 @@ assertion("1 bomb on tile " + str(expected_position), len(bombs) == 1)
 
 bomb = bombs[0]
 
-actions = [(0, bombman.PlayerKeyMaps.ACTION_DOWN)]
+actions = [bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_DOWN)]
 
 for i in range(10):
     print("moving player 0 to down using inputs, dt = " + str(dt))
@@ -196,7 +196,7 @@ assertion("bomb doesn't have detonator", not bomb.has_detonator())
 assertion("bomb hasn't exploded", not bomb.has_exploded)
 assertion("player tile position = (1,1)", player.get_tile_position() == (1, 1))
 
-actions = [(0, bombman.PlayerKeyMaps.ACTION_UP)]
+actions = [bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_UP)]
 
 for i in range(20):
     print("moving player 0 up using inputs, dt = " + str(dt))
@@ -223,7 +223,7 @@ assertion("tile " + str(tile) + " doesn't have flame and danger value != 0",
 
 assertion("player 0 is dead", player.is_dead())
 
-actions = [(1, bombman.PlayerKeyMaps.ACTION_RIGHT)]
+actions = [bombman.PlayerActions(1, bombman.PlayerKeyMaps.ACTION_RIGHT)]
 
 for i in range(30):
     print("moving player 1 to the right using inputs, dt = " + str(dt))
@@ -240,7 +240,7 @@ tile = bombman.Position(1, 2)
 assertion("tile " + str(tile) + " is walkable (destroyed by flame)", test_map.tile_is_walkable(tile))
 
 print("making players 1 and 2 lay bombs")
-actions = [(1, bombman.PlayerKeyMaps.ACTION_BOMB), (2, bombman.PlayerKeyMaps.ACTION_BOMB)]
+actions = [bombman.PlayerActions(1, bombman.PlayerKeyMaps.ACTION_BOMB), bombman.PlayerActions(2, bombman.PlayerKeyMaps.ACTION_BOMB)]
 
 player1.react_to_inputs(actions, dt, test_map)
 player2.react_to_inputs(actions, dt, test_map)
@@ -296,7 +296,7 @@ main_menu = bombman.MainMenu(game.sound_player)
 main_menu.process_inputs([])  # needed
 
 print("press down and right")
-actions = [(0, bombman.PlayerKeyMaps.ACTION_DOWN), (0, bombman.PlayerKeyMaps.ACTION_RIGHT)]
+actions = [bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_DOWN), bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_RIGHT)]
 main_menu.process_inputs(actions)
 
 print("scrolling (should do nothing)")
@@ -307,7 +307,7 @@ assertion("menu state = MENU_STATE_SELECTING", main_menu.get_state() == bombman.
 assertion("selected item = (1,0)", main_menu.get_selected_item() == (1, 0))
 
 print("press bomb")
-actions = [(0, bombman.PlayerKeyMaps.ACTION_BOMB)]
+actions = [bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_BOMB)]
 main_menu.process_inputs(actions)
 assertion("menu state = MENU_STATE_CONFIRM", main_menu.get_state() == bombman.Menu.MENU_STATE_CONFIRM)
 

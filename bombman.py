@@ -521,14 +521,15 @@ class PlaySetup:
     # ----------------------------------------------------------------------------
 
     def __init__(self):
+        # todo: hodnoty zpatky
         self.player_slots = [None for i in range(10)]  ##< player slots: (player_number, team_color),
-        self.number_of_games = 10
+        self.number_of_games = 1
 
         # default setup, player 0 vs 3 AI players:
         self.player_slots[0] = PlayerInfo(0, 0)
-        self.player_slots[1] = PlayerInfo(-1, 1)
-        self.player_slots[2] = PlayerInfo(-1, 2)
-        self.player_slots[3] = PlayerInfo(-1, 3)
+        self.player_slots[1] = PlayerInfo(1, 1)
+        # self.player_slots[2] = PlayerInfo(-1, 2)
+        # self.player_slots[3] = PlayerInfo(-1, 3)
 
     # ----------------------------------------------------------------------------
 
@@ -1895,6 +1896,32 @@ class Positionable:
 
 # ==============================================================================
 
+class PlayerActions:
+
+    def __init__(self, player: int or None, action : int):
+        self.player = player
+        self.action = action
+
+    def __eq__(self, other):
+        return isinstance(other, PlayerActions) \
+            and self.player == other.player \
+            and self.action == other.action
+
+    def __repr__(self):
+        return "PlayerAction p#%s a:%s" % (self.player, self.action)
+
+
+# ==============================================================================
+
+class PlayerItems:
+
+    def __init__(self, item: int, amount : int):
+        self.item = item
+        self.amount = amount
+
+
+# ==============================================================================
+
 class Player(Positionable):
     """
     Player itself
@@ -1914,7 +1941,7 @@ class Player(Positionable):
         how many more bombs the player can put at the time
     flame_length : int
         how long the flame is in tiles
-    items : list[int, int]
+    items : dict[int, int]
         which items and how many the player has, format: [item code]: count
     has_spring : bool
         whether player's bombs have springs
@@ -2534,7 +2561,7 @@ class Player(Positionable):
 
         Parameters
         ----------
-        input_actions : list[tuple[int, int]]
+        input_actions : list[PlayerActions]
         game_map : GameMap
         distance_to_travel : float
         """
@@ -2544,10 +2571,10 @@ class Player(Positionable):
         bomb_was_pressed = False
 
         for item in input_actions:
-            if item[0] != self.number:
+            if item.player != self.number:
                 continue  # not an action for this player
 
-            input_action = item[1]
+            input_action = item.action
 
             if self.disease == Player.DISEASE_REVERSE_CONTROLS:
                 input_action = PlayerKeyMaps.get_opposite_action(input_action)
@@ -2720,7 +2747,7 @@ class Player(Positionable):
 
         Parameters
         ----------
-        input_actions : list[tuple[int, int]]
+        input_actions : list[PlayerActions]
         dt : int
         game_map : GameMap
         """
@@ -2764,7 +2791,7 @@ class Player(Positionable):
         self.boxing = False
 
         if self.disease == Player.DISEASE_DIARRHEA:
-            input_actions.append((self.number, PlayerKeyMaps.ACTION_BOMB))  # inject bomb put event
+            input_actions.append(PlayerActions(self.number, PlayerKeyMaps.ACTION_BOMB))  # inject bomb put event
 
         self.__manage_input_actions(input_actions, game_map, distance_to_travel)
 
@@ -3040,8 +3067,8 @@ class PlayerKeyMaps(StringSerializable):
 
     Attributes
     ----------
-    key_maps : dict[tuple[int, int]]
-        maps keys to tuples of a format: (player_number, action), for general actions player_number will be -1
+    key_maps : dict[int, PlayerActions]
+        maps keys to PlayerActions objects, for general actions player_number will be -1
     bomb_key_last_pressed_time : list[int]
         for bomb double press detection
     bomb_key_previous_state : list[bool]
@@ -3107,7 +3134,7 @@ class PlayerKeyMaps(StringSerializable):
     # ----------------------------------------------------------------------------
 
     def __init__(self):
-        self.key_maps = {}  ##< maps keys to tuples of a format: (player_number, action), for general actions player_number will be -1
+        self.key_maps = {}  ##< maps keys to objects of PlayerActions, for general actions player_number will be -1
 
         self.bomb_key_last_pressed_time = [0 for i in range(10)]  ##< for bomb double press detection
         self.bomb_key_previous_state = [False for i in range(10)]  ##< for bomb double press detection
@@ -3179,7 +3206,7 @@ class PlayerKeyMaps(StringSerializable):
 
     def get_mouse_button_events(self) -> list:
         """
-        Returns a tuple corresponding to mouse buttons (same as get_mouse_button_states) where each item says if
+        Returns a list corresponding to mouse buttons (same as get_mouse_button_states) where each item says if
         the button has been pressed since the last frame.
 
         Return
@@ -3201,7 +3228,7 @@ class PlayerKeyMaps(StringSerializable):
 
         Parameters
         ----------
-        pygame_events : list[pygame.Event]
+        pygame_events : list[pygame.event]
         frame_number : int
         """
         if frame_number != self.last_mouse_update_frame:
@@ -3228,7 +3255,7 @@ class PlayerKeyMaps(StringSerializable):
             elif pygame_event.type == pygame.KEYDOWN:
                 try:
                     self.typed_string_buffer = self.typed_string_buffer[1:]
-                    self.typed_string_buffer.append(chr(pygame_event.key))
+                    self.typed_string_buffer.append(pygame_event.unicode)
                 except Exception:
                     debug_log("couldn't append typed character to the buffer")
 
@@ -3253,6 +3280,7 @@ class PlayerKeyMaps(StringSerializable):
         self.set_player_key_map(3, PlayerKeyMaps.MOUSE_CONTROL_UP, PlayerKeyMaps.MOUSE_CONTROL_RIGHT,
                                 PlayerKeyMaps.MOUSE_CONTROL_DOWN, PlayerKeyMaps.MOUSE_CONTROL_LEFT,
                                 PlayerKeyMaps.MOUSE_CONTROL_BUTTON_L, PlayerKeyMaps.MOUSE_CONTROL_BUTTON_R)
+        self.set_player_key_map(4, pygame.K_KP8, pygame.K_KP6, pygame.K_KP2, pygame.K_KP4, pygame.K_KP5, pygame.K_KP0)
         self.set_special_key_map(pygame.K_ESCAPE)
 
     # ----------------------------------------------------------------------------
@@ -3313,16 +3341,16 @@ class PlayerKeyMaps(StringSerializable):
 
         return result
 
-        # ----------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------
 
-    def set_one_key_map(self, key: int, player_number: int, action: int) -> None:
+    def set_one_key_map(self, key: int or None, player_number: int, action: int) -> None:
         if key is not None:
-            self.key_maps[key] = (player_number, action)
+            self.key_maps[key] = PlayerActions(player_number, action)
 
             to_be_deleted = []
 
             for item in self.key_maps:  # get rid of possible collissions
-                if item != key and self.key_maps[item] == (player_number, action):
+                if item != key and self.key_maps[item] == PlayerActions(player_number, action):
                     to_be_deleted.append(item)
 
             for item in to_be_deleted:
@@ -3375,8 +3403,8 @@ class PlayerKeyMaps(StringSerializable):
             PlayerKeyMaps.ACTION_SPECIAL)}
 
         for key in self.key_maps:
-            if self.key_maps[key][0] == player_number:
-                result[self.key_maps[key][1]] = key
+            if self.key_maps[key].player == player_number:
+                result[self.key_maps[key].action] = key
 
         return result
 
@@ -3453,7 +3481,7 @@ class PlayerKeyMaps(StringSerializable):
 
     def get_menu_key_map(self) -> int or None:
         for key in self.key_maps:
-            if self.key_maps[key][0] == -1:
+            if self.key_maps[key].player == -1:
                 return key
 
         return None
@@ -3489,7 +3517,7 @@ class PlayerKeyMaps(StringSerializable):
 
         Return
         ------
-        list[tuple[int, int]]
+        list[PlayerActions]
         """
         keys_pressed = pygame.key.get_pressed()
 
@@ -3553,12 +3581,12 @@ class PlayerKeyMaps(StringSerializable):
                 action_tuple = self.key_maps[key_code]
                 result.append(action_tuple)
 
-                if action_tuple[1] == PlayerKeyMaps.ACTION_BOMB:
-                    player_number = action_tuple[0]
+                if action_tuple.action == PlayerKeyMaps.ACTION_BOMB:
+                    player_number = action_tuple.player
 
-                    if self.bomb_key_previous_state[player_number] == False and pygame.time.get_ticks() - \
+                    if self.bomb_key_previous_state[player_number] is False and pygame.time.get_ticks() - \
                             self.bomb_key_last_pressed_time[player_number] < 200:
-                        result.append((player_number, PlayerKeyMaps.ACTION_BOMB_DOUBLE))
+                        result.append(PlayerActions(player_number, PlayerKeyMaps.ACTION_BOMB_DOUBLE))
 
                     self.bomb_key_last_pressed_time[player_number] = pygame.time.get_ticks()
 
@@ -3824,6 +3852,7 @@ class AnimationInstance:
 
 # ==============================================================================
 
+
 class Animation:
     """
     Info about animation
@@ -3834,8 +3863,7 @@ class Animation:
     frame_time : float
     frame_images : list[pygame.surface.Surface]
     playing_instances : list[AnimationInstance]
-        A set of playing animations, it is a list of tuples in
-        a format: (pixel_coordinates, started_playing).
+        A set of playing animations, it is a list of objects AnimationInstance(pixel_coordinates, started_playing).
     """
 
     # ----------------------------------------------------------------------------
@@ -3849,7 +3877,7 @@ class Animation:
         for i in range(start_number, end_number + 1):
             self.frame_images.append(pygame.image.load(filename_prefix + str(i) + filename_postfix))
 
-        self.playing_instances = []  ##< A set of playing animations, it is a list of tuples in
+        self.playing_instances = []
 
     # ----------------------------------------------------------------------------
 
@@ -3997,7 +4025,7 @@ class Menu:
 
         Parameters
         ----------
-        input_list : list[tuple[int, int]]
+        input_list : list[PlayerActions]
         """
         if self.menu_left:
             self.menu_left = False
@@ -4012,7 +4040,7 @@ class Menu:
         actions_pressed = []
 
         for action in input_list:
-            action_code = action[1]
+            action_code = action.action
 
             if not self.action_keys_previous_state[action_code]:
                 # the following condition disallows ACTION_BOMB and ACTION_BOMB_DOUBLE to be in the list at the same time => causes trouble
@@ -4678,9 +4706,9 @@ class PlaySetupMenu(Menu):
                 self.items[0][-1] += "-"
                 self.items[1].append("-")
             else:
-                team_color = Renderer.COLOR_RGB_VALUES[slot[1]] if slot[1] != Game.COLOR_BLACK else dark_grey
-                self.items[0][-1] += ("player " + str(slot[0] + 1)) if slot[0] >= 0 else "AI"
-                self.items[1].append(Renderer.colored_text(slot[1], str(slot[1] + 1)))  # team number
+                team_color = Renderer.COLOR_RGB_VALUES[slot.get_team_number()] if slot.get_team_number() != Game.COLOR_BLACK else dark_grey
+                self.items[0][-1] += ("player " + str(slot.get_player_number() + 1)) if slot.get_player_number() >= 0 else "AI"
+                self.items[1].append(Renderer.colored_text(slot.get_team_number(), str(slot.get_team_number() + 1)))  # team number
 
     # ----------------------------------------------------------------------------
 
@@ -4710,15 +4738,16 @@ class PlaySetupMenu(Menu):
                     if slot is None:
                         new_value = -1
                     else:
-                        new_value = slot[0] + 1
+                        new_value = slot.player_number + 1
 
-                    slots[self.selected_item[0] - 1] = (
-                    new_value, slot[1] if slot is not None else self.selected_item[0] - 1) if new_value <= 3 else None
+                    slots[self.selected_item[0] - 1] = PlayerInfo(
+                        new_value, slot.get_team_number() if slot is not None else self.selected_item[0] - 1
+                    ) if new_value <= 3 else None
                 else:
                     # changing teams
 
                     if slot is not None:
-                        slots[self.selected_item[0] - 1] = (slot[0], (slot[1] + 1) % 10)
+                        slots[self.selected_item[0] - 1] = PlayerInfo(slot.get_player_number(), (slot.get_team_number() + 1) % 10)
 
                 self.state = Menu.MENU_STATE_SELECTING
 
@@ -4733,15 +4762,15 @@ class Renderer:
 
     Attributes
     ----------
-    screen_resolution : tuple[int, int]
-    screen_center : tuple[float, float]
-    map_render_location : tuple[float, float]
+    screen_resolution : Position
+    screen_center : Coordinate
+    map_render_location : Coordinate
     environment_images : dict[str, tuple[pygame.surface.Surface, pygame.surface.Surface, pygame.surface.Surface]]
     preview_map_name : str
     preview_map_image : pygame.surface.Surface or None
     font_small : pygame.font.Font
     font_normal : pygame.font.Font
-    previous_mouse_coordinates : tuple[int, int]
+    previous_mouse_coordinates : Position
     prerendered_map : pygame.surface.Surface or None
     prerendered_map_background : pygame.surface.Surface
     player_images : list[dict[pygame.surface.Surface]]
@@ -5020,7 +5049,7 @@ class Renderer:
 
     def update_screen_info(self):
         self.screen_resolution = Renderer.get_screen_size()
-        self.screen_center = (self.screen_resolution[0] / 2, self.screen_resolution[1] / 2)
+        self.screen_center = Coordinate(self.screen_resolution.get_col() / 2, self.screen_resolution.get_row() / 2)
         self.map_render_location = Renderer.get_map_render_position()
 
     # ----------------------------------------------------------------------------
@@ -5178,7 +5207,7 @@ class Renderer:
         ----------
         new_resolution : tuple[int, int]
         """
-        self.screen_resolution = new_resolution
+        self.screen_resolution = Position().from_tuple(new_resolution)
 
     # ----------------------------------------------------------------------------
 
@@ -5487,13 +5516,13 @@ class Renderer:
         pygame.surface.Surface
         """
 
-        result = pygame.Surface(self.screen_resolution)
+        result = pygame.Surface(self.screen_resolution.get_tuple())
 
         if self.menu_background_image is None:
             self.menu_background_image = pygame.image.load(os.path.join(Game.RESOURCE_PATH, "gui_menu_background.png"))
 
-        background_position = (self.screen_center[0] - self.menu_background_image.get_size()[0] / 2,
-                               self.screen_center[1] - self.menu_background_image.get_size()[1] / 2)
+        background_position = (self.screen_center.get_col() - self.menu_background_image.get_size()[0] / 2,
+                               self.screen_center.get_row() - self.menu_background_image.get_size()[1] / 2)
 
         profiler.measure_start("menu rend. backg.")
         result.blit(self.menu_background_image, background_position)
@@ -5502,14 +5531,14 @@ class Renderer:
         profiler.measure_start("menu rend. party")
         if game.cheat_is_active(Game.CHEAT_PARTY):
             for circle_info in self.party_circles:  # draw circles
-                circle_coords = (self.screen_center[0] + circle_info[0][0], self.screen_center[1] + circle_info[0][1])
+                circle_coords = (self.screen_center.get_col() + circle_info[0][0], self.screen_center.get_row() + circle_info[0][1])
                 radius_coefficient = (math.sin(
                     pygame.time.get_ticks() * circle_info[4] / 100.0 + circle_info[3]) + 1) / 2.0
                 circle_radius = int(circle_info[1] * radius_coefficient)
                 pygame.draw.circle(result, circle_info[2], circle_coords, circle_radius)
 
             for player_info in self.party_players:  # draw players
-                player_coords = (self.screen_center[0] + player_info[0][0], self.screen_center[1] + player_info[0][1])
+                player_coords = (self.screen_center.get_col() + player_info[0][0], self.screen_center.get_row() + player_info[0][1])
 
                 player_direction = (int((pygame.time.get_ticks() + player_info[2]) / 150)) % 4
 
@@ -5530,12 +5559,12 @@ class Renderer:
 
                 if bomb_info[0] < 0:  # border collision, change direction
                     bomb_info[2] = 1
-                elif bomb_info[0] > self.screen_resolution[0] - 50:
+                elif bomb_info[0] > self.screen_resolution.get_col() - 50:
                     bomb_info[2] = -1
 
                 if bomb_info[1] < 0:  # border collision, change direction
                     bomb_info[3] = 1
-                elif bomb_info[1] > self.screen_resolution[1] - 50:
+                elif bomb_info[1] > self.screen_resolution.get_row() - 50:
                     bomb_info[3] = -1
 
         profiler.measure_stop("menu rend. party")
@@ -5549,11 +5578,11 @@ class Renderer:
 
         # render menu description text
 
-        y = self.screen_center[1] + Renderer.MENU_DESCRIPTION_Y_OFFSET
+        y = self.screen_center.get_row() + Renderer.MENU_DESCRIPTION_Y_OFFSET
 
         if len(menu_to_render.get_text()) != 0:
             result.blit(self.menu_item_images[0][1], (
-            self.screen_center[0] - self.menu_item_images[0][1].get_size()[0] / 2,
+            self.screen_center.get_col() - self.menu_item_images[0][1].get_size()[0] / 2,
             y))  # menu description text image is at index 0
             y += self.menu_item_images[0][1].get_size()[1] + Renderer.MENU_LINE_SPACING * 2
 
@@ -5564,10 +5593,10 @@ class Renderer:
         column_x_space = 150
 
         if columns % 2 == 0:
-            xs = [self.screen_center[0] + i * column_x_space - ((columns - 1) * column_x_space / 2) for i in
+            xs = [self.screen_center.get_col() + i * column_x_space - ((columns - 1) * column_x_space / 2) for i in
                   range(columns)]  # even number of columns
         else:
-            xs = [self.screen_center[0] + (i - columns / 2) * column_x_space for i in range(columns)]
+            xs = [self.screen_center.get_col() + (i - columns / 2) * column_x_space for i in range(columns)]
 
         selected_coordinates = menu_to_render.get_selected_item()
 
@@ -5642,16 +5671,16 @@ class Renderer:
         if menu_to_render.get_state() == Menu.MENU_STATE_CONFIRM_PROMPT:
             width = 120
             height = 80
-            x = self.screen_center[0] - width / 2
-            y = self.screen_center[1] - height / 2
+            x = self.screen_center.get_col() - width / 2
+            y = self.screen_center.get_row() - height / 2
 
             pygame.draw.rect(result, (0, 0, 0), pygame.Rect(x, y, width, height))
             pygame.draw.rect(result, (255, 255, 255), pygame.Rect(x, y, width, height), 1)
 
             text_image = pygame.transform.rotate(self.gui_images["prompt"], math.sin(pygame.time.get_ticks() / 100) * 5)
 
-            x = self.screen_center[0] - text_image.get_size()[0] / 2
-            y = self.screen_center[1] - text_image.get_size()[1] / 2
+            x = self.screen_center.get_col() - text_image.get_size()[0] / 2
+            y = self.screen_center.get_row() - text_image.get_size()[1] / 2
 
             result.blit(text_image, (x, y))
 
@@ -5662,7 +5691,7 @@ class Renderer:
         if isinstance(menu_to_render, MapSelectMenu):  # also not too nice
             if menu_to_render.show_map_preview():
                 self.update_map_preview_image(menu_to_render.get_selected_map_name())
-                result.blit(self.preview_map_image, (self.screen_center[0] + 180, items_y))
+                result.blit(self.preview_map_image, (self.screen_center.get_col() + 180, items_y))
 
         profiler.measure_stop("menu rend. preview")
 
@@ -5733,8 +5762,8 @@ class Renderer:
                 starting_positions = temp_map.get_starting_positions()
 
                 for player_index in range(len(starting_positions)):
-                    draw_position = (int(starting_positions[player_index][0]) * tile_size + tile_half_size,
-                                     int(starting_positions[player_index][1]) * tile_size + tile_half_size)
+                    draw_position = (int(starting_positions[player_index].get_col()) * tile_size + tile_half_size,
+                                     int(starting_positions[player_index].get_row()) * tile_size + tile_half_size)
 
                     pygame.draw.rect(self.preview_map_image, tile_color,
                                      pygame.Rect(pos_x, pos_y, tile_size, tile_size))
@@ -5803,7 +5832,7 @@ class Renderer:
         for j in range(GameMap.MAP_HEIGHT):
             for i in range(GameMap.MAP_WIDTH):
                 render_position = (i * Renderer.MAP_TILE_WIDTH + Renderer.MAP_BORDER_WIDTH,
-                                   j * Renderer.MAP_TILE_HEIGHT + + Renderer.MAP_BORDER_WIDTH)
+                                   j * Renderer.MAP_TILE_HEIGHT + Renderer.MAP_BORDER_WIDTH)
                 self.prerendered_map_background.blit(self.environment_images[map_to_render.get_environment_name()][0],
                                                      render_position)
 
@@ -5963,7 +5992,7 @@ class Renderer:
     # ----------------------------------------------------------------------------
 
     def render_map(self, map_to_render: GameMap) -> pygame.surface.Surface:
-        result = pygame.Surface(self.screen_resolution)
+        result = pygame.Surface(self.screen_resolution.get_tuple())
 
         self.menu_background_image = None  # unload unneccessarry images
         self.menu_item_images = None
@@ -5997,7 +6026,7 @@ class Renderer:
         tiles = map_to_render.get_tiles()
         environment_images = self.environment_images[map_to_render.get_environment_name()]
 
-        y = Renderer.MAP_BORDER_WIDTH + self.map_render_location.get_col()
+        y = Renderer.MAP_BORDER_WIDTH + self.map_render_location.get_row()
         y_offset_block = Renderer.MAP_TILE_HEIGHT - environment_images[1].get_size()[1]
         y_offset_wall = Renderer.MAP_TILE_HEIGHT - environment_images[2].get_size()[1]
 
@@ -6016,7 +6045,7 @@ class Renderer:
 
                 object_to_render = ordered_objects_to_render[object_to_render_index]
 
-                if object_to_render.get_position()[1] > line_number + 1:
+                if object_to_render.get_position().get_row() > line_number + 1:
                     break
 
                 if isinstance(object_to_render, Player):
@@ -6124,8 +6153,8 @@ class Renderer:
 
             countdown_image_index = int(math.ceil(max(3 - map_to_render.get_map_time() / third, 1)))
             countdown_image = self.gui_images["countdown"][countdown_image_index]
-            countdown_position = (self.screen_center[0] - countdown_image.get_size()[0] / 2,
-                                  self.screen_center[1] - countdown_image.get_size()[1] / 2)
+            countdown_position = (self.screen_center.get_col() - countdown_image.get_size()[0] / 2,
+                                  self.screen_center.get_row() - countdown_image.get_size()[1] / 2)
 
             result.blit(countdown_image, countdown_position)
 
@@ -6391,7 +6420,7 @@ class AI:
 
         Return
         ----------
-        list[tuple[int, int]]
+        list[PlayerActions]
         """
         if self.do_nothing or self.player.is_dead():
             return []
@@ -6480,14 +6509,14 @@ class AI:
             if self.player.get_disease() == Player.DISEASE_REVERSE_CONTROLS:
                 chosen_movement_action = PlayerKeyMaps.get_opposite_action(chosen_movement_action)
 
-            self.outputs.append((self.player.get_number(), chosen_movement_action))
+            self.outputs.append(PlayerActions(self.player.get_number(), chosen_movement_action))
 
             self.didnt_move_since = self.game_map.get_map_time()
 
         if self.game_map.get_map_time() - self.didnt_move_since > 10000:  # didn't move for 10 seconds or more => force move
             chosen_movement_action = random.choice((PlayerKeyMaps.ACTION_UP, PlayerKeyMaps.ACTION_RIGHT,
                                                     PlayerKeyMaps.ACTION_DOWN, PlayerKeyMaps.ACTION_LEFT))
-            self.outputs.append((self.player.get_number(), chosen_movement_action))
+            self.outputs.append(PlayerActions(self.player.get_number(), chosen_movement_action))
 
         # bomb decisions
 
@@ -6497,7 +6526,7 @@ class AI:
             # should I throw?
 
             if self.player.can_throw() and max(escape_direction_ratings) == 0:
-                self.outputs.append((self.player.get_number(), PlayerKeyMaps.ACTION_BOMB_DOUBLE))
+                self.outputs.append(PlayerActions(self.player.get_number(), PlayerKeyMaps.ACTION_BOMB_DOUBLE))
         elif self.player.get_bombs_left() > 0 and (
                 self.player.can_throw() or self.game_map.get_danger_value(current_tile) > 2000 and max(
                 escape_direction_ratings) > 0):
@@ -6532,15 +6561,15 @@ class AI:
 
                 if random.randint(0, 2) == 0 and self.should_lay_multibomb(
                         chosen_movement_action):  # lay a single bomb or multibomb?
-                    self.outputs.append((self.player.get_number(), PlayerKeyMaps.ACTION_BOMB_DOUBLE))
+                    self.outputs.append(PlayerActions(self.player.get_number(), PlayerKeyMaps.ACTION_BOMB_DOUBLE))
                 else:
-                    self.outputs.append((self.player.get_number(), PlayerKeyMaps.ACTION_BOMB))
+                    self.outputs.append(PlayerActions(self.player.get_number(), PlayerKeyMaps.ACTION_BOMB))
 
         # should I box?
 
         if self.player.can_box() and not self.player.detonator_is_active():
             if trapped or self.game_map.tile_has_bomb(self.player.get_forward_tile_position()):
-                self.outputs.append((self.player.get_number(), PlayerKeyMaps.ACTION_SPECIAL))
+                self.outputs.append(PlayerActions(self.player.get_number(), PlayerKeyMaps.ACTION_SPECIAL))
 
         if bomb_laid:  # if bomb was laid, the outputs must be recomputed fast in order to prevent laying bombs to other tiles
             self.recompute_compute_actions_on = current_time + 10
@@ -6552,7 +6581,7 @@ class AI:
 
         if self.player.detonator_is_active():
             if random.randint(0, 2) == 0 and self.game_map.get_danger_value(current_tile) >= GameMap.SAFE_DANGER_VALUE:
-                self.outputs.append((self.player.get_number(), PlayerKeyMaps.ACTION_SPECIAL))
+                self.outputs.append(PlayerActions(self.player.get_number(), PlayerKeyMaps.ACTION_SPECIAL))
 
         return self.outputs
 
@@ -6913,7 +6942,7 @@ class Game:
 
         self.screen = pygame.display.set_mode(self.settings.screen_resolution, display_flags)
 
-        screen_center = (Renderer.get_screen_size()[0] / 2, Renderer.get_screen_size()[1] / 2)
+        screen_center = (Renderer.get_screen_size().get_col() / 2, Renderer.get_screen_size().get_row() / 2)
         pygame.mouse.set_pos(screen_center)
 
         self.renderer.update_screen_info()
@@ -7158,13 +7187,13 @@ class Game:
                     self.immortal_players_numbers = []
 
                     for i in range(len(player_slots)):
-                        if player_slots[i] is not None and player_slots[i][0] >= 0:  # cheat: if not AI
+                        if player_slots[i] is not None and player_slots[i].get_player_number() >= 0:  # cheat: if not AI
                             self.immortal_players_numbers.append(i)  # make the player immortal
 
                 self.ais = []
 
                 for i in range(len(player_slots)):
-                    if player_slots[i] is not None and player_slots[i][0] < 0:  # indicates AI
+                    if player_slots[i] is not None and player_slots[i].get_player_number() < 0:  # indicates AI
                         self.ais.append(AI(self.game_map.get_players_by_numbers()[i], self.game_map))
 
                 for player in self.game_map.get_players():
@@ -7212,18 +7241,20 @@ class Game:
 
         Parameters
         ----------
-        actions : list[tuple[int, int]]
+        actions : list[PlayerActions]
 
         Return
         ------
-        iter[tuple[int, int]]
+        iter[PlayerActions]
         """
         player_slots = self.play_setup.get_slots()
-        # player_slots ->  # list ( struct ( id_src, team  ) or None )
-        # actions -> # list ( struct ( player_id_src, action_type ) )
+        # player_slots ->  # list ( PlayerInfo or None )
+        # actions -> # list ( PlayerActions )
 
         result = filter(
-            lambda a: (player_slots[a[0]] is not None and player_slots[a[0]][0] >= 0) or (a[1] == PlayerKeyMaps.ACTION_MENU),
+            lambda a:
+                (player_slots[a.player] is not None and player_slots[a.player].player_number >= 0)
+                or (a.action == PlayerKeyMaps.ACTION_MENU),
             actions)
         return result
 
@@ -7239,7 +7270,7 @@ class Game:
         actions_being_performed = self.filter_out_disallowed_actions(self.player_key_maps.get_current_actions())
 
         for action in actions_being_performed:
-            if action[0] == -1:  # menu key pressed
+            if action.player == -1:  # menu key pressed
                 self.state = Game.STATE_MENU_PLAY
                 return
 
