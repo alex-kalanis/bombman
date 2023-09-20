@@ -4363,6 +4363,7 @@ class ResultMenu(Menu):
                 win_maximum = player.get_wins()
             elif player.get_wins() == win_maximum:
                 winner_team_numbers.append(player.get_team_number())
+        winner_team_numbers = list(set(winner_team_numbers))  # just unique ones
 
         separator = "__________________________________________________"
 
