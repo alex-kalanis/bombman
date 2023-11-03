@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 # coding=utf-8
 """Bombman
 
@@ -305,6 +305,9 @@ class Coordinate:
         return isinstance(other, Coordinate) \
             and self.get_col() <= other.get_col() \
             and self.get_row() <= other.get_row()
+
+    def __copy__(self):
+        return Coordinate(self.get_col(), self.get_row())
 
     def __str__(self):
         return "c[%s,%s]" % (self.col, self.row)
@@ -613,7 +616,7 @@ class PlaySetup:
 
     Attributes
     ----------
-    player_slots : list[PlayerInfo or None]
+    player_slots : dict[int, PlayerInfo or None]
         list of (player_number, team_color),
         negative player_number = AI, slot index ~ player color index
     """
@@ -674,6 +677,9 @@ class GameMap:
     danger_map_is_up_to_date : bool
         to regenerate danger map only when needed
     tiles : list[list[MapTile]]
+        position of each tile is defined as integer:integer (for that it has these lists)
+        in testing it's 0-10 rows and 0-14 columns
+        movement is just float over these integers
     starting_positions : list[Coordinate]
         starting position for each player
     environment_name : str
