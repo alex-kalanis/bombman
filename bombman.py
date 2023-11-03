@@ -99,6 +99,8 @@ DEBUG_VERBOSE : bool
 # todo: hack original Atomic Bomberman network protocols - with client-server will be really easy to make necessary
 #       adapters, then it will be possible to use this as another client or just renderer for projectors
 #       (which is not possible with old AB)
+#
+# todo: separate options for teams - not everytime shall be team game
 
 import sys
 import pygame
@@ -4361,24 +4363,33 @@ class ResultMenu(Menu):
         players : list[Player]
         """
         win_maximum = 0
+        winner_players_numbers = []
         winner_team_numbers = []
 
         for player in players:
             if player.get_wins() > win_maximum:
+                winner_players_numbers = [player.get_number()]
                 winner_team_numbers = [player.get_team_number()]
                 win_maximum = player.get_wins()
             elif player.get_wins() == win_maximum:
+                winner_players_numbers.append(player.get_number())
                 winner_team_numbers.append(player.get_team_number())
 
         separator = "__________________________________________________"
 
-        if len(winner_team_numbers) == 1:
+        if 1 == len(winner_players_numbers):
+            announcement_player_text = "Winner player is " + Renderer.colored_color_name(winner_players_numbers[0]) + "!"
+        else:
+            announcement_player_text = "Draw game! Participants: \n"
+            announcement_player_text += ", ".join(map(lambda number: Renderer.colored_color_name(number), winner_players_numbers))
+
+        if 1 == len(winner_team_numbers):
             announcement_text = "Winner team is " + Renderer.colored_color_name(winner_team_numbers[0]) + "!"
         else:
-            announcement_text = "Draw game! Participants: "
+            announcement_text = "Draw team game! Participants: \n"
             announcement_text += ", ".join(map(lambda number: Renderer.colored_color_name(number), winner_team_numbers))
 
-        self.text = announcement_text + "\n" + separator + "\n"
+        self.text = announcement_player_text + "\n" + separator + "\n" + announcement_text + "\n" + separator + "\n"
 
         player_number = 0
         row = 0
