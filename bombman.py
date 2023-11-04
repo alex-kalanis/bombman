@@ -541,6 +541,19 @@ class ColorInfo:
         else:
             return ColorInfo(int(self.red - other), int(self.green - other), int(self.blue - other))
 
+    def __eq__(self, other):
+        if isinstance(other, ColorInfo):
+            return self.red == other.red \
+               and self.green == other.green \
+               and self.blue == other.blue \
+               and self.alpha == other.alpha
+        elif isinstance(other, pygame.color.Color):
+            return self.red == other.r \
+               and self.green == other.g \
+               and self.blue == other.b
+        else:
+            return False
+
     def __str__(self):
         return "ci[%s,%s,%s]" % (self.red, self.green, self.blue)
 
@@ -4907,7 +4920,7 @@ class Renderer:
     previous_mouse_coordinates : Position
     prerendered_map : pygame.surface.Surface or None
     prerendered_map_background : pygame.surface.Surface
-    player_images : list[dict[pygame.surface.Surface]]
+    player_images : list[dict[str, pygame.surface.Surface]]
         player images in format [color index]["sprite name"] and [color index]["sprite name"][frame]
     bomb_images : list[pygame.surface.Surface]
     flame_images : list[pygame.surface.Surface]
@@ -4939,6 +4952,9 @@ class Renderer:
         ColorInfo(168, 127, 56),  # brown
         ColorInfo(209, 117, 206)  # purple
     ]
+
+    COLOR_RGB_BASIC_PLAYER = ColorInfo(255, 0, 0)
+    COLOR_RGB_BASIC_TEAM = ColorInfo(0, 38, 255)
 
     MAP_TILE_WIDTH = 50  ##< tile width in pixels
     MAP_TILE_HEIGHT = 45  ##< tile height in pixels
@@ -5007,32 +5023,42 @@ class Renderer:
         self.player_images = []  ##< player images in format [color index]["sprite name"] and [color index]["sprite name"][frame]
 
         for i in range(10):
+            # "i" is position of color number as defined in Renderer.COLOR_RGB_VALUES
             self.player_images.append({})
 
             for helper_string in ["up", "right", "down", "left"]:
                 self.player_images[-1][helper_string] = self.color_surface(
-                    pygame.image.load(os.path.join(Game.RESOURCE_PATH, "player_" + helper_string + ".png")), i)
+                    pygame.image.load(os.path.join(Game.RESOURCE_PATH, "player_" + helper_string + ".png")),
+                    Renderer.COLOR_RGB_VALUES[i]
+                )
 
                 string_index = "walk " + helper_string
 
                 self.player_images[-1][string_index] = []
                 self.player_images[-1][string_index].append(self.color_surface(
-                    pygame.image.load(os.path.join(Game.RESOURCE_PATH, "player_" + helper_string + "_walk1.png")), i))
+                    pygame.image.load(os.path.join(Game.RESOURCE_PATH, "player_" + helper_string + "_walk1.png")),
+                    Renderer.COLOR_RGB_VALUES[i]
+                ))
 
                 if helper_string == "up" or helper_string == "down":
                     self.player_images[-1][string_index].append(self.color_surface(
                         pygame.image.load(os.path.join(Game.RESOURCE_PATH, "player_" + helper_string + "_walk2.png")),
-                        i))
+                        Renderer.COLOR_RGB_VALUES[i]
+                    ))
                 else:
                     self.player_images[-1][string_index].append(self.player_images[-1][helper_string])
 
                 self.player_images[-1][string_index].append(self.color_surface(
-                    pygame.image.load(os.path.join(Game.RESOURCE_PATH, "player_" + helper_string + "_walk3.png")), i))
+                    pygame.image.load(os.path.join(Game.RESOURCE_PATH, "player_" + helper_string + "_walk3.png")),
+                    Renderer.COLOR_RGB_VALUES[i]
+                ))
                 self.player_images[-1][string_index].append(self.player_images[-1][string_index][0])
 
                 string_index = "box " + helper_string
                 self.player_images[-1][string_index] = self.color_surface(
-                    pygame.image.load(os.path.join(Game.RESOURCE_PATH, "player_" + helper_string + "_box.png")), i)
+                    pygame.image.load(os.path.join(Game.RESOURCE_PATH, "player_" + helper_string + "_box.png")),
+                    Renderer.COLOR_RGB_VALUES[i]
+                )
 
         self.bomb_images = []
         self.bomb_images.append(pygame.image.load(os.path.join(Game.RESOURCE_PATH, "bomb1.png")))
@@ -5219,17 +5245,17 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    def color_surface(self, surface: pygame.surface.Surface, player_color_number: int, team_color_number: int or None = None) -> pygame.surface.Surface:
+    def color_surface(self, surface: pygame.surface.Surface, player_color: ColorInfo, team_color: ColorInfo or None = None) -> pygame.surface.Surface:
         """
-        Returns colored image from another image (replaces red color with given color).
+        Returns colored image from another image (replaces red and blue color with given colors).
+        Red is player, Blue is team
         This method is slow.
-        Color is (r,g,b) tuple of 0 - 1 floats.
 
         Parameters
         ----------
         surface : pygame.surface.Surface
-        player_color_number : int
-        team_color_number : int or None
+        player_color : ColorInfo
+        team_color : ColorInfo or None
 
         Return
         ------
@@ -5237,24 +5263,25 @@ class Renderer:
         """
         result = surface.copy()
 
-        if team_color_number is None:
-            team_color_number = player_color_number
+        # no team color set = use player color
+        if team_color is None:
+            team_color = player_color
 
-        # change all red and blue pixels to specified color - red is player, blue is team
+        # change all red and blue pixels to specified color
         for j in range(result.get_size()[1]):
             for i in range(result.get_size()[0]):
                 pixel_color = result.get_at((i, j))
 
-                if pixel_color.r == 255 and pixel_color.g == 0 and pixel_color.b == 0:
-                    pixel_color.r = Renderer.COLOR_RGB_VALUES[player_color_number].red
-                    pixel_color.g = Renderer.COLOR_RGB_VALUES[player_color_number].green
-                    pixel_color.b = Renderer.COLOR_RGB_VALUES[player_color_number].blue
+                if Renderer.COLOR_RGB_BASIC_PLAYER == pixel_color:
+                    pixel_color.r = player_color.red
+                    pixel_color.g = player_color.green
+                    pixel_color.b = player_color.blue
                     result.set_at((i, j), pixel_color)
 
-                if pixel_color.r == 0 and pixel_color.g == 38 and pixel_color.b == 255:
-                    pixel_color.r = Renderer.COLOR_RGB_VALUES[team_color_number].red
-                    pixel_color.g = Renderer.COLOR_RGB_VALUES[team_color_number].green
-                    pixel_color.b = Renderer.COLOR_RGB_VALUES[team_color_number].blue
+                if Renderer.COLOR_RGB_BASIC_TEAM == pixel_color:
+                    pixel_color.r = team_color.red
+                    pixel_color.g = team_color.green
+                    pixel_color.b = team_color.blue
                     result.set_at((i, j), pixel_color)
 
         return result
