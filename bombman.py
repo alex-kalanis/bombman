@@ -5219,7 +5219,7 @@ class Renderer:
 
     # ----------------------------------------------------------------------------
 
-    def color_surface(self, surface: pygame.surface.Surface, color_number: int) -> pygame.surface.Surface:
+    def color_surface(self, surface: pygame.surface.Surface, player_color_number: int, team_color_number: int or None = None) -> pygame.surface.Surface:
         """
         Returns colored image from another image (replaces red color with given color).
         This method is slow.
@@ -5228,7 +5228,8 @@ class Renderer:
         Parameters
         ----------
         surface : pygame.surface.Surface
-        color_number : int
+        player_color_number : int
+        team_color_number : int or None
 
         Return
         ------
@@ -5236,15 +5237,24 @@ class Renderer:
         """
         result = surface.copy()
 
-        # change all red pixels to specified color
+        if team_color_number is None:
+            team_color_number = player_color_number
+
+        # change all red and blue pixels to specified color - red is player, blue is team
         for j in range(result.get_size()[1]):
             for i in range(result.get_size()[0]):
                 pixel_color = result.get_at((i, j))
 
                 if pixel_color.r == 255 and pixel_color.g == 0 and pixel_color.b == 0:
-                    pixel_color.r = Renderer.COLOR_RGB_VALUES[color_number].red
-                    pixel_color.g = Renderer.COLOR_RGB_VALUES[color_number].green
-                    pixel_color.b = Renderer.COLOR_RGB_VALUES[color_number].blue
+                    pixel_color.r = Renderer.COLOR_RGB_VALUES[player_color_number].red
+                    pixel_color.g = Renderer.COLOR_RGB_VALUES[player_color_number].green
+                    pixel_color.b = Renderer.COLOR_RGB_VALUES[player_color_number].blue
+                    result.set_at((i, j), pixel_color)
+
+                if pixel_color.r == 0 and pixel_color.g == 38 and pixel_color.b == 255:
+                    pixel_color.r = Renderer.COLOR_RGB_VALUES[team_color_number].red
+                    pixel_color.g = Renderer.COLOR_RGB_VALUES[team_color_number].green
+                    pixel_color.b = Renderer.COLOR_RGB_VALUES[team_color_number].blue
                     result.set_at((i, j), pixel_color)
 
         return result
