@@ -263,18 +263,24 @@ class Coordinate:
     def __add__(self, other):
         if isinstance(other, Coordinate):
             return Coordinate(float(self.get_col() + other.get_col()), float(self.get_row() + other.get_row()))
+        elif isinstance(other, (tuple, list)):
+            return Coordinate(float(self.get_col() + other[0]), float(self.get_row() + other[1]))
         else:
             return Coordinate(float(self.get_col() + other), float(self.get_row() + other))
 
     def __sub__(self, other):
         if isinstance(other, Coordinate):
             return Coordinate(float(self.get_col() - other.get_col()), float(self.get_row() - other.get_row()))
+        elif isinstance(other, (tuple, list)):
+            return Coordinate(float(self.get_col() - other[0]), float(self.get_row() - other[1]))
         else:
             return Coordinate(float(self.get_col() - other), float(self.get_row() - other))
 
     def __mul__(self, other):
         if isinstance(other, Coordinate):
             return Coordinate(float(self.get_col() * other.get_col()), float(self.get_row() * other.get_row()))
+        elif isinstance(other, (tuple, list)):
+            return Coordinate(float(self.get_col() * other[0]), float(self.get_row() * other[1]))
         else:
             return Coordinate(float(self.get_col() * other), float(self.get_row() * other))
 
@@ -361,18 +367,24 @@ class Position:
     def __add__(self, other):
         if isinstance(other, (Position, Coordinate)):
             return Position(int(self.get_col() + other.get_col()), int(self.get_row() + other.get_row()))
+        elif isinstance(other, (tuple, list)):
+            return Position(int(self.get_col() + other[0]), int(self.get_row() + other[1]))
         else:
             return Position(int(self.get_col() + other), int(self.get_row() + other))
 
     def __sub__(self, other):
         if isinstance(other, (Position, Coordinate)):
             return Position(int(self.get_col() - other.get_col()), int(self.get_row() - other.get_row()))
+        elif isinstance(other, (tuple, list)):
+            return Position(int(self.get_col() - other[0]), int(self.get_row() - other[1]))
         else:
             return Position(int(self.get_col() - other), int(self.get_row() - other))
 
     def __mul__(self, other):
         if isinstance(other, (Position, Coordinate)):
             return Position(int(self.get_col() * other.get_col()), int(self.get_row() * other.get_row()))
+        elif isinstance(other, (tuple, list)):
+            return Position(int(self.get_col() * other[0]), int(self.get_row() * other[1]))
         else:
             return Position(int(self.get_col() * other), int(self.get_row() * other))
 
@@ -6067,21 +6079,23 @@ class Renderer:
 
         Return
         ------
-        tuple[pygame.surface.Surface or None, Position, list[float], bool, list[pygame.surface.Surface]]
+        tuple[pygame.surface.Surface or None, Position, Coordinate, bool, list[pygame.surface.Surface]]
         """
 
         profiler.measure_start("map rend. player")
 
         draw_shadow = True
-        relative_offset = [0, 0]
+        relative_offset = Coordinate()
         overlay_images = []
 
         if player.is_dead():
             profiler.measure_stop("map rend. player")
-            return None, (0, 0), (0, 0), False, []
+            return None, Position(), Coordinate(), False, []
 
         sprite_center = Renderer.PLAYER_SPRITE_CENTER
         animation_frame = int((player.get_state_time() / 100) % 4)
+        # todo: tady to barvy prohodi, protoze to renderuje pres tymy a ne pres solo (solo je jen na countdownu);
+        #     - predelat na barvy, ktere budou u playera, resp. oddelit sprity a pak je sem flaknout podle playera
         color_index = player.get_number() if game_map.get_state() == GameMap.STATE_WAITING_TO_PLAY else player.get_team_number()
 
         if player.is_in_air():
@@ -6097,8 +6111,10 @@ class Renderer:
             int(scale * player_image.get_size()[0]), int(scale * player_image.get_size()[1])))
             draw_shadow = False
 
-            relative_offset[0] = -1 * (image_to_render.get_size()[0] / 2 - Renderer.PLAYER_SPRITE_CENTER.get_col())  # offset caused by scale
-            relative_offset[1] = -1 * int(math.sin(quotient * math.pi / 2.0) * Renderer.MAP_TILE_HEIGHT * GameMap.MAP_HEIGHT)  # height offset
+            relative_offset = Coordinate(
+                -1 * (image_to_render.get_size()[0] / 2 - Renderer.PLAYER_SPRITE_CENTER.get_col()),  # offset caused by scale
+                -1 * int(math.sin(quotient * math.pi / 2.0) * Renderer.MAP_TILE_HEIGHT * GameMap.MAP_HEIGHT)  # height offset
+            )
 
         elif player.is_teleporting():
             image_to_render = self.player_images[color_index][("up", "right", "down", "left")[animation_frame]]
@@ -6140,13 +6156,13 @@ class Renderer:
 
         Return
         ------
-        tuple[pygame.surface.Surface, Position, list[float], bool, list[pygame.surface.Surface]]
+        tuple[pygame.surface.Surface, Position, Coordinate, bool, list[pygame.surface.Surface]]
         """
 
         profiler.measure_start("map rend. bomb")
         sprite_center = Renderer.BOMB_SPRITE_CENTER
         animation_frame = int((bomb.time_of_existence / 100) % 4)
-        relative_offset = [0, 0]
+        relative_offset = Coordinate()
         overlay_images = []
 
         if bomb.has_detonator():
@@ -6161,12 +6177,16 @@ class Renderer:
 
             helper_offset = -1 * bomb.flight_info.total_distance_to_travel + bomb.flight_info.distance_travelled
 
-            relative_offset = [
+            relative_offset = Coordinate(
                 int(bomb.flight_info.direction.get_col() * helper_offset * Renderer.MAP_TILE_WIDTH),
-                int(bomb.flight_info.direction.get_row() * helper_offset * Renderer.MAP_TILE_HALF_HEIGHT)]
+                int(bomb.flight_info.direction.get_row() * helper_offset * Renderer.MAP_TILE_HALF_HEIGHT)
+            )
 
-            relative_offset[1] -= int(math.sin(
+            relative_offset -= (0, int(math.sin(
                 normalised_distance_travelled * math.pi) * bomb.flight_info.total_distance_to_travel * Renderer.MAP_TILE_HEIGHT / 2)  # height in air
+            )
+            # relative_offset.row = relative_offset.row - int(math.sin(
+            #     normalised_distance_travelled * math.pi) * bomb.flight_info.total_distance_to_travel * Renderer.MAP_TILE_HEIGHT / 2)  # height in air
 
         image_to_render = self.bomb_images[animation_frame]
 
@@ -6248,7 +6268,7 @@ class Renderer:
                 if draw_shadow:
                     render_position = self.tile_position_to_pixel_position(object_to_render.get_position(), Renderer.SHADOW_SPRITE_CENTER)
                     render_position = Coordinate(
-                        (render_position.get_col() + Renderer.MAP_BORDER_WIDTH + relative_offset[0]) % self.prerendered_map_background.get_size()[0] + self.map_render_location.get_col(),
+                        (render_position.get_col() + Renderer.MAP_BORDER_WIDTH + relative_offset.get_col()) % self.prerendered_map_background.get_size()[0] + self.map_render_location.get_col(),
                         render_position.get_row() + Renderer.MAP_BORDER_WIDTH + self.map_render_location.get_row()
                     )
 
@@ -6256,8 +6276,8 @@ class Renderer:
 
                 render_position = self.tile_position_to_pixel_position(object_to_render.get_position(), sprite_center)
                 render_position = Coordinate(
-                    (render_position.get_col() + Renderer.MAP_BORDER_WIDTH + relative_offset[0]) % self.prerendered_map_background.get_size()[0] + self.map_render_location.get_col(),
-                    render_position.get_row() + Renderer.MAP_BORDER_WIDTH + relative_offset[1] + self.map_render_location.get_row()
+                    (render_position.get_col() + Renderer.MAP_BORDER_WIDTH + relative_offset.get_col()) % self.prerendered_map_background.get_size()[0] + self.map_render_location.get_col(),
+                    render_position.get_row() + Renderer.MAP_BORDER_WIDTH + relative_offset.get_row() + self.map_render_location.get_row()
                 )
 
                 result.blit(image_to_render, render_position.get_tuple())
