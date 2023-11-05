@@ -261,7 +261,7 @@ class Coordinate:
         return self.col, self.row
 
     def __add__(self, other):
-        if isinstance(other, Coordinate):
+        if isinstance(other, (Position, Coordinate)):
             return Coordinate(float(self.get_col() + other.get_col()), float(self.get_row() + other.get_row()))
         elif isinstance(other, (tuple, list)):
             return Coordinate(float(self.get_col() + other[0]), float(self.get_row() + other[1]))
@@ -269,7 +269,7 @@ class Coordinate:
             return Coordinate(float(self.get_col() + other), float(self.get_row() + other))
 
     def __sub__(self, other):
-        if isinstance(other, Coordinate):
+        if isinstance(other, (Position, Coordinate)):
             return Coordinate(float(self.get_col() - other.get_col()), float(self.get_row() - other.get_row()))
         elif isinstance(other, (tuple, list)):
             return Coordinate(float(self.get_col() - other[0]), float(self.get_row() - other[1]))
@@ -277,42 +277,96 @@ class Coordinate:
             return Coordinate(float(self.get_col() - other), float(self.get_row() - other))
 
     def __mul__(self, other):
-        if isinstance(other, Coordinate):
+        if isinstance(other, (Position, Coordinate)):
             return Coordinate(float(self.get_col() * other.get_col()), float(self.get_row() * other.get_row()))
         elif isinstance(other, (tuple, list)):
             return Coordinate(float(self.get_col() * other[0]), float(self.get_row() * other[1]))
         else:
             return Coordinate(float(self.get_col() * other), float(self.get_row() * other))
 
+    def __truediv__(self, other):
+        if isinstance(other, (Position, Coordinate)):
+            return Coordinate(float(self.get_col() / other.get_col()), float(self.get_row() / other.get_row()))
+        elif isinstance(other, (tuple, list)):
+            return Coordinate(float(self.get_col() / other[0]), float(self.get_row() / other[1]))
+        else:
+            return Coordinate(float(self.get_col() / other), float(self.get_row() / other))
+
+    def __eq__(self, other):
+        if isinstance(other, (Position, Coordinate)):
+            return self.get_col() == other.get_col() and self.get_row() == other.get_row()
+        elif isinstance(other, (tuple, list)):
+            return self.get_col() == other[0] and self.get_row() == other[1]
+        else:
+            return self.get_col() == other and self.get_row() == other
+
     def __gt__(self, other):
-        return isinstance(other, Coordinate) \
-            and ((
+        if isinstance(other, (Position, Coordinate)):
+            return (
                 self.get_col() > other.get_col()
                 and self.get_row() >= other.get_row()
             ) or (
                 self.get_col() >= other.get_col()
                 and self.get_row() > other.get_row()
-            ))
+            )
+        elif isinstance(other, (tuple, list)):
+            return (
+                self.get_col() > other[0]
+                and self.get_row() >= other[1]
+            ) or (
+                self.get_col() >= other[0]
+                and self.get_row() > other[1]
+            )
+        else:
+            return (
+                self.get_col() > other
+                and self.get_row() >= other
+            ) or (
+                self.get_col() >= other
+                and self.get_row() > other
+            )
 
     def __ge__(self, other):
-        return isinstance(other, Coordinate) \
-            and self.get_col() >= other.get_col() \
-            and self.get_row() >= other.get_row()
+        if isinstance(other, (Position, Coordinate)):
+            return self.get_col() >= other.get_col() and self.get_row() >= other.get_row()
+        elif isinstance(other, (tuple, list)):
+            return self.get_col() >= other[0] and self.get_row() >= other[1]
+        else:
+            return self.get_col() >= other and self.get_row() >= other
 
     def __lt__(self, other):
-        return isinstance(other, Coordinate) \
-            and ((
+        if isinstance(other, (Position, Coordinate)):
+            return (
                 self.get_col() < other.get_col()
                 and self.get_row() <= other.get_row()
             ) or (
                 self.get_col() <= other.get_col()
                 and self.get_row() < other.get_row()
-            ))
+            )
+        elif isinstance(other, (tuple, list)):
+            return (
+                self.get_col() < other[0]
+                and self.get_row() <= other[1]
+            ) or (
+                self.get_col() <= other[0]
+                and self.get_row() < other[1]
+            )
+        else:
+            return (
+                self.get_col() < other
+                and self.get_row() <= other
+            ) or (
+                self.get_col() <= other
+                and self.get_row() < other
+            )
 
     def __le__(self, other):
-        return isinstance(other, Coordinate) \
-            and self.get_col() <= other.get_col() \
-            and self.get_row() <= other.get_row()
+        if isinstance(other, (Position, Coordinate)):
+            return self.get_col() <= other.get_col() and self.get_row() <= other.get_row()
+        elif isinstance(other, (tuple, list)):
+            return self.get_col() <= other[0] and self.get_row() <= other[1]
+        else:
+            return self.get_col() <= other and self.get_row() <= other
 
     def __copy__(self):
         return Coordinate(self.get_col(), self.get_row())
@@ -388,40 +442,89 @@ class Position:
         else:
             return Position(int(self.get_col() * other), int(self.get_row() * other))
 
+    def __truediv__(self, other):
+        if isinstance(other, (Position, Coordinate)):
+            return Position(int(self.get_col() / other.get_col()), int(self.get_row() / other.get_row()))
+        elif isinstance(other, (tuple, list)):
+            return Position(int(self.get_col() / other[0]), int(self.get_row() / other[1]))
+        else:
+            return Position(int(self.get_col() / other), int(self.get_row() / other))
+
     def __eq__(self, other):
-        return isinstance(other, Position) \
-            and self.get_col() == other.get_col() \
-            and self.get_row() == other.get_row()
+        if isinstance(other, (Position, Coordinate)):
+            return self.get_col() == other.get_col() and self.get_row() == other.get_row()
+        elif isinstance(other, (tuple, list)):
+            return self.get_col() == other[0] and self.get_row() == other[1]
+        else:
+            return self.get_col() == other and self.get_row() == other
 
     def __gt__(self, other):
-        return isinstance(other, (Position, Coordinate)) \
-            and ((
+        if isinstance(other, (Position, Coordinate)):
+            return (
                 self.get_col() > other.get_col()
                 and self.get_row() >= other.get_row()
             ) or (
                 self.get_col() >= other.get_col()
                 and self.get_row() > other.get_row()
-            ))
+            )
+        elif isinstance(other, (tuple, list)):
+            return (
+                self.get_col() > other[0]
+                and self.get_row() >= other[1]
+            ) or (
+                self.get_col() >= other[0]
+                and self.get_row() > other[1]
+            )
+        else:
+            return (
+                self.get_col() > other
+                and self.get_row() >= other
+            ) or (
+                self.get_col() >= other
+                and self.get_row() > other
+            )
 
     def __ge__(self, other):
-        return isinstance(other, (Position, Coordinate)) \
-            and self.get_col() >= other.get_col() \
-            and self.get_row() >= other.get_row()
+        if isinstance(other, (Position, Coordinate)):
+            return self.get_col() >= other.get_col() and self.get_row() >= other.get_row()
+        elif isinstance(other, (tuple, list)):
+            return self.get_col() >= other[0] and self.get_row() >= other[1]
+        else:
+            return self.get_col() >= other and self.get_row() >= other
 
     def __lt__(self, other):
-        return isinstance(other, (Position, Coordinate)) \
-            and ((
+        if isinstance(other, (Position, Coordinate)):
+            return (
                 self.get_col() < other.get_col()
                 and self.get_row() <= other.get_row()
             ) or (
                 self.get_col() <= other.get_col()
                 and self.get_row() < other.get_row()
-            ))
+            )
+        elif isinstance(other, (tuple, list)):
+            return (
+                self.get_col() < other[0]
+                and self.get_row() <= other[1]
+            ) or (
+                self.get_col() <= other[0]
+                and self.get_row() < other[1]
+            )
+        else:
+            return (
+                self.get_col() < other
+                and self.get_row() <= other
+            ) or (
+                self.get_col() <= other
+                and self.get_row() < other
+            )
 
     def __le__(self, other):
-        return isinstance(other, (Position, Coordinate)) \
-            and self.get_col() <= other.get_col() \
-            and self.get_row() <= other.get_row()
+        if isinstance(other, (Position, Coordinate)):
+            return self.get_col() <= other.get_col() and self.get_row() <= other.get_row()
+        elif isinstance(other, (tuple, list)):
+            return self.get_col() <= other[0] and self.get_row() <= other[1]
+        else:
+            return self.get_col() <= other and self.get_row() <= other
 
     def __copy__(self):
         return Position(self.get_col(), self.get_row())
@@ -742,8 +845,7 @@ class GameMap:
         at what time (in ms) the disease clouds should be released
     """
 
-    MAP_WIDTH = 15
-    MAP_HEIGHT = 11
+    MAP_SIZE = Position(15, 11)
     WALL_MARGIN_HORIZONTAL = 0.2
     WALL_MARGIN_VERTICAL = 0.4
 
@@ -829,7 +931,7 @@ class GameMap:
         for i in range(len(string_split[3])):
             tile_character = string_split[3][i]
 
-            if i % GameMap.MAP_WIDTH == 0:  # add new row
+            if i % GameMap.MAP_SIZE.get_col() == 0:  # add new row
                 line += 1
                 column = 0
                 self.tiles.append([])
@@ -901,8 +1003,8 @@ class GameMap:
         # init danger map:
 
         #  2D array of times in ms for each square that
-        danger_row = [GameMap.SAFE_DANGER_VALUE for i in range(GameMap.MAP_WIDTH)]
-        self.danger_map = [danger_row for i in range(GameMap.MAP_HEIGHT)]
+        danger_row = [GameMap.SAFE_DANGER_VALUE for i in range(GameMap.MAP_SIZE.get_col())]
+        self.danger_map = [danger_row for i in range(GameMap.MAP_SIZE.get_row())]
 
         # initialise players:
 
@@ -1322,7 +1424,7 @@ class GameMap:
         ------
         bool
         """
-        return 0 <= tile_coordinates.get_col() <= GameMap.MAP_WIDTH - 1 and 0 <= tile_coordinates.get_row() <= GameMap.MAP_HEIGHT - 1
+        return (0, 0) <= tile_coordinates <= (GameMap.MAP_SIZE - 1)
 
     # ----------------------------------------------------------------------------
 
@@ -1452,7 +1554,7 @@ class GameMap:
             bomb_position.get_col() - 1
         ]
         flame_stop = [False, False, False, False]
-        map_limit = [0, GameMap.MAP_WIDTH - 1, GameMap.MAP_HEIGHT - 1, 0]
+        map_limit = [0, GameMap.MAP_SIZE.get_col() - 1, GameMap.MAP_SIZE.get_row() - 1, 0]
         increment = [-1, 1, 1, -1]
         goes_horizontally = [False, True, False, True]
         previous_flame = [None, None, None, None]
@@ -1510,8 +1612,8 @@ class GameMap:
         """
         possible_tiles = []
 
-        for y in range(GameMap.MAP_HEIGHT):
-            for x in range(GameMap.MAP_WIDTH):
+        for y in range(GameMap.MAP_SIZE.get_row()):
+            for x in range(GameMap.MAP_SIZE.get_col()):
                 tile = self.get_tile(Position(x, y))
 
                 if tile.kind == MapTile.TILE_FLOOR \
@@ -2507,7 +2609,7 @@ class Player(Positionable):
         elif item == GameMap.ITEM_FLAME:
             self.flame_length += 1
         elif item == GameMap.ITEM_SUPERFLAME:
-            self.flame_length = max(GameMap.MAP_WIDTH, GameMap.MAP_HEIGHT)
+            self.flame_length = max(GameMap.MAP_SIZE.get_col(), GameMap.MAP_SIZE.get_row())
         elif item == GameMap.ITEM_MULTIBOMB:
             self.has_multibomb = True
         elif item == GameMap.ITEM_DETONATOR:
@@ -3127,8 +3229,8 @@ class Bomb(Positionable):
         self.flight_info.direction.from_tuple(tuple(direction))
 
         self.move_to_tile_center(Coordinate(
-            destination_tile_coords[0] % GameMap.MAP_WIDTH,
-            destination_tile_coords[1] % GameMap.MAP_HEIGHT
+            destination_tile_coords[0] % GameMap.MAP_SIZE.get_col(),
+            destination_tile_coords[1] % GameMap.MAP_SIZE.get_row()
         ))
 
     # ----------------------------------------------------------------------------
@@ -4968,10 +5070,8 @@ class Renderer:
     COLOR_RGB_BASIC_PLAYER = ColorInfo(255, 0, 0)
     COLOR_RGB_BASIC_TEAM = ColorInfo(0, 38, 255)
 
-    MAP_TILE_WIDTH = 50  ##< tile width in pixels
-    MAP_TILE_HEIGHT = 45  ##< tile height in pixels
-    MAP_TILE_HALF_WIDTH = MAP_TILE_WIDTH / 2
-    MAP_TILE_HALF_HEIGHT = MAP_TILE_HEIGHT / 2
+    MAP_TILE_SIZE = Coordinate(50, 45)  # tile size in pixels
+    MAP_TILE_HALF_SIZE = MAP_TILE_SIZE / 2
 
     PLAYER_SPRITE_CENTER = Position(30, 80)  ##< player's feet (not geometrical) center of the sprite in pixels
     BOMB_SPRITE_CENTER = Position(22, 33)
@@ -5028,9 +5128,8 @@ class Renderer:
             )
 
         self.prerendered_map = None  # keeps a reference to a map for which some parts have been prerendered
-        self.prerendered_map_background = pygame.Surface((
-                                                         GameMap.MAP_WIDTH * Renderer.MAP_TILE_WIDTH + 2 * Renderer.MAP_BORDER_WIDTH,
-                                                         GameMap.MAP_HEIGHT * Renderer.MAP_TILE_HEIGHT + 2 * Renderer.MAP_BORDER_WIDTH))
+        background_size = GameMap.MAP_SIZE * Renderer.MAP_TILE_SIZE + 2 * Renderer.MAP_BORDER_WIDTH
+        self.prerendered_map_background = pygame.Surface(background_size.get_tuple())
 
         self.player_images = []  ##< player images in format [color index]["sprite name"] and [color index]["sprite name"][frame]
 
@@ -5322,8 +5421,8 @@ class Renderer:
             center = Coordinate()
 
         return Position(
-            int((tile_position.get_col() * Renderer.MAP_TILE_WIDTH) - center.get_col()),
-            int((tile_position.get_row() * Renderer.MAP_TILE_HEIGHT) - center.get_row())
+            int((tile_position.get_col() * Renderer.MAP_TILE_SIZE.get_col()) - center.get_col()),
+            int((tile_position.get_row() * Renderer.MAP_TILE_SIZE.get_row()) - center.get_row())
         )
 
     # ----------------------------------------------------------------------------
@@ -5356,8 +5455,8 @@ class Renderer:
 
         screen_size = Renderer.get_screen_size()
         return Coordinate(
-            (screen_size.get_col() - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_WIDTH * GameMap.MAP_WIDTH) / 2,
-            (screen_size.get_row() - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_HEIGHT * GameMap.MAP_HEIGHT - 50) / 2
+            (screen_size.get_col() - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_SIZE.get_col() * GameMap.MAP_SIZE.get_col()) / 2,
+            (screen_size.get_row() - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_SIZE.get_row() * GameMap.MAP_SIZE.get_row() - 50) / 2
         )
 
         # ----------------------------------------------------------------------------
@@ -5379,8 +5478,8 @@ class Renderer:
 
         map_render_location = Renderer.get_map_render_position()
         return Coordinate(
-            map_render_location.get_col() + int(map_position.get_col() * Renderer.MAP_TILE_WIDTH) + Renderer.MAP_BORDER_WIDTH + offset.get_col(),
-            map_render_location.get_row() + int(map_position.get_row() * Renderer.MAP_TILE_HEIGHT) + Renderer.MAP_BORDER_WIDTH + offset.get_row()
+            map_render_location.get_col() + int(map_position.get_col() * Renderer.MAP_TILE_SIZE.get_col()) + Renderer.MAP_BORDER_WIDTH + offset.get_col(),
+            map_render_location.get_row() + int(map_position.get_row() * Renderer.MAP_TILE_SIZE.get_row()) + Renderer.MAP_BORDER_WIDTH + offset.get_row()
         )
 
     def set_resolution(self, new_resolution: tuple) -> None:
@@ -5910,15 +6009,15 @@ class Renderer:
 
             map_info_border_size = 5
 
-            self.preview_map_image = pygame.Surface((tile_size * GameMap.MAP_WIDTH,
-                                                     tile_size * GameMap.MAP_HEIGHT + map_info_border_size + Renderer.MAP_TILE_HEIGHT))
+            self.preview_map_image = pygame.Surface((tile_size * GameMap.MAP_SIZE.get_col(),
+                                                     tile_size * GameMap.MAP_SIZE.get_row() + map_info_border_size + Renderer.MAP_TILE_SIZE.get_row()))
 
             with open(os.path.join(Game.MAP_PATH, map_filename)) as map_file:
                 map_data = map_file.read()
                 temp_map = GameMap(map_data, PlaySetup(), GameInfo())
 
-                for y in range(GameMap.MAP_HEIGHT):
-                    for x in range(GameMap.MAP_WIDTH):
+                for y in range(GameMap.MAP_SIZE.get_row()):
+                    for x in range(GameMap.MAP_SIZE.get_col()):
                         tile = temp_map.get_tile_at(Position(x, y))
                         tile_kind = tile.kind
 
@@ -5967,21 +6066,21 @@ class Renderer:
                         tile_half_size
                     )
 
-                y = tile_size * GameMap.MAP_HEIGHT + map_info_border_size
+                y = tile_size * GameMap.MAP_SIZE.get_row() + map_info_border_size
                 column = 0
 
                 self.preview_map_image.blit(self.environment_images[temp_map.get_environment_name()][0], (0, y))
 
                 # draw starting item icons
 
-                starting_x = Renderer.MAP_TILE_WIDTH + 5
+                starting_x = Renderer.MAP_TILE_SIZE.get_col() + 5
 
                 x = starting_x
 
                 pygame.draw.rect(
                     self.preview_map_image,
                     ColorInfo(255, 255, 255).get_tuple(),
-                    pygame.Rect(x, y, Renderer.MAP_TILE_WIDTH, Renderer.MAP_TILE_HEIGHT)
+                    pygame.Rect(x, y, Renderer.MAP_TILE_SIZE.get_col(), Renderer.MAP_TILE_SIZE.get_row())
                 )
 
                 starting_items = temp_map.get_starting_items()
@@ -6029,10 +6128,10 @@ class Renderer:
 
         self.prerendered_map_background.blit(image_background, (0, 0))
 
-        for j in range(GameMap.MAP_HEIGHT):
-            for i in range(GameMap.MAP_WIDTH):
-                render_position = (i * Renderer.MAP_TILE_WIDTH + Renderer.MAP_BORDER_WIDTH,
-                                   j * Renderer.MAP_TILE_HEIGHT + Renderer.MAP_BORDER_WIDTH)
+        for j in range(GameMap.MAP_SIZE.get_row()):
+            for i in range(GameMap.MAP_SIZE.get_col()):
+                render_position = (i * Renderer.MAP_TILE_SIZE.get_col() + Renderer.MAP_BORDER_WIDTH,
+                                   j * Renderer.MAP_TILE_SIZE.get_row() + Renderer.MAP_BORDER_WIDTH)
                 self.prerendered_map_background.blit(self.environment_images[map_to_render.get_environment_name()][0],
                                                      render_position)
 
@@ -6113,7 +6212,7 @@ class Renderer:
 
             relative_offset = Coordinate(
                 -1 * (image_to_render.get_size()[0] / 2 - Renderer.PLAYER_SPRITE_CENTER.get_col()),  # offset caused by scale
-                -1 * int(math.sin(quotient * math.pi / 2.0) * Renderer.MAP_TILE_HEIGHT * GameMap.MAP_HEIGHT)  # height offset
+                -1 * int(math.sin(quotient * math.pi / 2.0) * Renderer.MAP_TILE_SIZE.get_row() * GameMap.MAP_SIZE.get_row())  # height offset
             )
 
         elif player.is_teleporting():
@@ -6178,12 +6277,12 @@ class Renderer:
             helper_offset = -1 * bomb.flight_info.total_distance_to_travel + bomb.flight_info.distance_travelled
 
             relative_offset = Coordinate(
-                int(bomb.flight_info.direction.get_col() * helper_offset * Renderer.MAP_TILE_WIDTH),
-                int(bomb.flight_info.direction.get_row() * helper_offset * Renderer.MAP_TILE_HALF_HEIGHT)
+                int(bomb.flight_info.direction.get_col() * helper_offset * Renderer.MAP_TILE_SIZE.get_col()),
+                int(bomb.flight_info.direction.get_row() * helper_offset * Renderer.MAP_TILE_HALF_SIZE.get_row())
             )
 
             relative_offset -= (0, int(math.sin(
-                normalised_distance_travelled * math.pi) * bomb.flight_info.total_distance_to_travel * Renderer.MAP_TILE_HEIGHT / 2)  # height in air
+                normalised_distance_travelled * math.pi) * bomb.flight_info.total_distance_to_travel * Renderer.MAP_TILE_SIZE.get_row() / 2)  # height in air
             )
             # relative_offset.row = relative_offset.row - int(math.sin(
             #     normalised_distance_travelled * math.pi) * bomb.flight_info.total_distance_to_travel * Renderer.MAP_TILE_HEIGHT / 2)  # height in air
@@ -6235,8 +6334,8 @@ class Renderer:
         environment_images = self.environment_images[map_to_render.get_environment_name()]
 
         y = Renderer.MAP_BORDER_WIDTH + self.map_render_location.get_row()
-        y_offset_block = Renderer.MAP_TILE_HEIGHT - environment_images[1].get_size()[1]
-        y_offset_wall = Renderer.MAP_TILE_HEIGHT - environment_images[2].get_size()[1]
+        y_offset_block = Renderer.MAP_TILE_SIZE.get_row() - environment_images[1].get_size()[1]
+        y_offset_wall = Renderer.MAP_TILE_SIZE.get_row() - environment_images[2].get_size()[1]
 
         line_number = 0
         object_to_render_index = 0
@@ -6244,7 +6343,7 @@ class Renderer:
         flame_animation_frame = int((pygame.time.get_ticks() / 100) % 2)
 
         for line in tiles:
-            x = (GameMap.MAP_WIDTH - 1) * Renderer.MAP_TILE_WIDTH + Renderer.MAP_BORDER_WIDTH + \
+            x = (GameMap.MAP_SIZE.get_col() - 1) * Renderer.MAP_TILE_SIZE.get_col() + Renderer.MAP_BORDER_WIDTH + \
                 self.map_render_location.get_col()
 
             while True:  # render players and bombs in the current line
@@ -6305,13 +6404,13 @@ class Renderer:
                 # for debug: uncomment this to see danger values on the map
                 # pygame.draw.rect(result,(int((1 - map_to_render.get_danger_value(tile.coordinates) / float(GameMap.SAFE_DANGER_VALUE)) * 255.0),0,0),pygame.Rect(x + 10,y + 10,30,30))
 
-                x -= Renderer.MAP_TILE_WIDTH
+                x -= Renderer.MAP_TILE_SIZE.get_col()
 
                 profiler.measure_stop("map rend. tiles")
 
-            x = (GameMap.MAP_WIDTH - 1) * Renderer.MAP_TILE_WIDTH + Renderer.MAP_BORDER_WIDTH + self.map_render_location.get_col()
+            x = (GameMap.MAP_SIZE.get_col() - 1) * Renderer.MAP_TILE_SIZE.get_col() + Renderer.MAP_BORDER_WIDTH + self.map_render_location.get_col()
 
-            y += Renderer.MAP_TILE_HEIGHT
+            y += Renderer.MAP_TILE_SIZE.get_row()
             line_number += 1
 
         # update animations
@@ -6748,7 +6847,7 @@ class AI:
                 chance_to_put_bomb = 5
             else:
                 block_tile_ratio = self.game_map.get_number_of_block_tiles() / float(
-                    GameMap.MAP_WIDTH * GameMap.MAP_HEIGHT)
+                    GameMap.MAP_SIZE.get_col() * GameMap.MAP_SIZE.get_row())
 
                 if block_tile_ratio < 0.4:  # if there is not many tiles left, put bombs more often
                     chance_to_put_bomb = 80

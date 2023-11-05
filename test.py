@@ -71,11 +71,11 @@ assertion("map state = STATE_WAITING_TO_PLAY", test_map.get_state() == bombman.G
 
 coords = bombman.Position(-1, 0)
 assertion("tile at " + str(coords) + " = None", test_map.get_tile_at(coords) == None)
-coords = bombman.Position(0, bombman.GameMap.MAP_HEIGHT)
+coords = bombman.Position(0, bombman.GameMap.MAP_SIZE.get_row())
 assertion("tile at " + str(coords) + " = None", test_map.get_tile_at(coords) == None)
 
-for y in range(bombman.GameMap.MAP_HEIGHT):
-    for x in range(bombman.GameMap.MAP_WIDTH):
+for y in range(bombman.GameMap.MAP_SIZE.get_row()):
+    for x in range(bombman.GameMap.MAP_SIZE.get_col()):
         expecting_players = 1 if (x, y) == (0, 0) or (x, y) == (14, 0) or (x, y) == (0, 10) or (x, y) == (14, 10) else 0
         assertion("number of players at " + str((x, y)) + "] = " + str(expecting_players),
                   len(test_map.get_players_at_tile(bombman.Position(x, y))) == expecting_players)
