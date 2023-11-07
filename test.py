@@ -353,3 +353,5 @@ assertion("key map - action up, player 0 = 'a'",
 
 print("=====================")
 print("total errors: " + str(errors_total))
+
+exit(1) if errors_total > 0 else exit(0)
