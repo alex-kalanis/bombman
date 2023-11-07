@@ -1504,8 +1504,7 @@ class GameMap:
             bomb_tile_position = bomb.get_tile_position()
 
             if bomb.movement != Bomb.BOMB_FLYING \
-                    and bomb_tile_position.get_col() == tile_coordinates.get_col() \
-                    and bomb_tile_position.get_row() == tile_coordinates.get_row():
+                    and bomb_tile_position == tile_coordinates:
                 result.append(bomb)
 
         return result
@@ -2352,7 +2351,9 @@ class Player(Positionable):
     # ----------------------------------------------------------------------------
 
     def is_walking(self) -> bool:
-        return self.state in [Player.STATE_WALKING_UP, Player.STATE_WALKING_RIGHT, Player.STATE_WALKING_DOWN,
+        return self.state in [Player.STATE_WALKING_UP,
+                              Player.STATE_WALKING_RIGHT,
+                              Player.STATE_WALKING_DOWN,
                               Player.STATE_WALKING_LEFT]
 
     # ----------------------------------------------------------------------------
@@ -3534,14 +3535,20 @@ class PlayerKeyMaps(StringSerializable):
         the rest is AI or over network
         """
         self.allow_control_by_mouse(False)
+        # left letters
         self.set_player_key_map(0, pygame.K_w, pygame.K_d, pygame.K_s, pygame.K_a, pygame.K_c, pygame.K_v)
+        # right letters
         self.set_player_key_map(1, pygame.K_u, pygame.K_k, pygame.K_j, pygame.K_h, pygame.K_o, pygame.K_p)
+        # cursors
         self.set_player_key_map(2, pygame.K_UP, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RETURN,
                                 pygame.K_RSHIFT)
+        # keypad
         self.set_player_key_map(3, pygame.K_KP8, pygame.K_KP6, pygame.K_KP2, pygame.K_KP4, pygame.K_KP5, pygame.K_KP0)
+        # mouse
         self.set_player_key_map(4, PlayerKeyMaps.MOUSE_CONTROL_UP, PlayerKeyMaps.MOUSE_CONTROL_RIGHT,
                                 PlayerKeyMaps.MOUSE_CONTROL_DOWN, PlayerKeyMaps.MOUSE_CONTROL_LEFT,
                                 PlayerKeyMaps.MOUSE_CONTROL_BUTTON_L, PlayerKeyMaps.MOUSE_CONTROL_BUTTON_R)
+        # special - exit
         self.set_special_key_map(pygame.K_ESCAPE)
 
     # ----------------------------------------------------------------------------
