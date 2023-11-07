@@ -5420,10 +5420,11 @@ class Renderer:
         if center is None:
             center = Coordinate()
 
-        return Position(
-            int((tile_position.get_col() * Renderer.MAP_TILE_SIZE.get_col()) - center.get_col()),
-            int((tile_position.get_row() * Renderer.MAP_TILE_SIZE.get_row()) - center.get_row())
-        )
+        return Position().from_tuple(((tile_position * Renderer.MAP_TILE_SIZE) - center).get_tuple())
+        # return Position(
+        #     int((tile_position.get_col() * Renderer.MAP_TILE_SIZE.get_col()) - center.get_col()),
+        #     int((tile_position.get_row() * Renderer.MAP_TILE_SIZE.get_row()) - center.get_row())
+        # )
 
     # ----------------------------------------------------------------------------
 
@@ -5454,10 +5455,13 @@ class Renderer:
         """
 
         screen_size = Renderer.get_screen_size()
-        return Coordinate(
-            (screen_size.get_col() - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_SIZE.get_col() * GameMap.MAP_SIZE.get_col()) / 2,
-            (screen_size.get_row() - Renderer.MAP_BORDER_WIDTH * 2 - Renderer.MAP_TILE_SIZE.get_row() * GameMap.MAP_SIZE.get_row() - 50) / 2
-        )
+        return Coordinate().from_tuple((
+                screen_size - (Renderer.MAP_BORDER_WIDTH * 2) - (Renderer.MAP_TILE_SIZE * GameMap.MAP_SIZE) - (0, 50)
+        ).get_tuple()) / 2
+        # return Coordinate(
+        #     (screen_size.get_col() - (Renderer.MAP_BORDER_WIDTH * 2) - (Renderer.MAP_TILE_SIZE.get_col() * GameMap.MAP_SIZE.get_col()) - 0) / 2,
+        #     (screen_size.get_row() - (Renderer.MAP_BORDER_WIDTH * 2) - (Renderer.MAP_TILE_SIZE.get_row() * GameMap.MAP_SIZE.get_row()) - 50) / 2
+        # )
 
         # ----------------------------------------------------------------------------
 
@@ -5477,10 +5481,15 @@ class Renderer:
         """
 
         map_render_location = Renderer.get_map_render_position()
-        return Coordinate(
-            map_render_location.get_col() + int(map_position.get_col() * Renderer.MAP_TILE_SIZE.get_col()) + Renderer.MAP_BORDER_WIDTH + offset.get_col(),
-            map_render_location.get_row() + int(map_position.get_row() * Renderer.MAP_TILE_SIZE.get_row()) + Renderer.MAP_BORDER_WIDTH + offset.get_row()
-        )
+
+        return map_render_location + Coordinate().from_tuple(tuple(map(
+            lambda x: int(x),
+            list((map_position * Renderer.MAP_TILE_SIZE).get_tuple())
+        ))) + Renderer.MAP_BORDER_WIDTH + offset
+        # return Coordinate(
+        #     map_render_location.get_col() + int(map_position.get_col() * Renderer.MAP_TILE_SIZE.get_col()) + Renderer.MAP_BORDER_WIDTH + offset.get_col(),
+        #     map_render_location.get_row() + int(map_position.get_row() * Renderer.MAP_TILE_SIZE.get_row()) + Renderer.MAP_BORDER_WIDTH + offset.get_row()
+        # )
 
     def set_resolution(self, new_resolution: tuple) -> None:
         """
