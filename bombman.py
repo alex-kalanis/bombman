@@ -1389,8 +1389,7 @@ class GameMap:
 
             if not player.is_dead() \
                     and not player.is_in_air() \
-                    and player_tile_position.get_col() == tile_coordinates.get_col() \
-                    and player_tile_position.get_row() == tile_coordinates.get_row():
+                    and player_tile_position == tile_coordinates:
                 result.append(player)
 
         return result
