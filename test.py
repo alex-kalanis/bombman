@@ -16,6 +16,7 @@ Test runs and get the number of errors and their statuses
 
 """
 errors_total: int = 0
+skip_render_game = bool(int(os.getenv('SKIP_RENDER', 0)))
 
 
 def assertion(message: str, condition):
@@ -283,73 +284,74 @@ assertion("ACTION_DOWN is opposite of ACTION_UP", bombman.PlayerKeyMaps.get_oppo
 assertion("ACTION_LEFT is opposite of ACTION_RIGHT", bombman.PlayerKeyMaps.get_opposite_action(
     bombman.PlayerKeyMaps.ACTION_LEFT) == bombman.PlayerKeyMaps.ACTION_RIGHT)
 
-print("init game")
-game = bombman.Game()
+if not skip_render_game:
+    print("init game")
+    game = bombman.Game()
 
-print("init animation")
+    print("init animation")
 
-animation = bombman.Animation(os.path.join(bombman.Game.RESOURCE_PATH, "animation_explosion"), 1, 10, ".png", 7)
+    animation = bombman.Animation(os.path.join(bombman.Game.RESOURCE_PATH, "animation_explosion"), 1, 10, ".png", 7)
 
-print("init main menu")
-main_menu = bombman.MainMenu(game.sound_player)
+    print("init main menu")
+    main_menu = bombman.MainMenu(game.sound_player)
 
-main_menu.process_inputs([])  # needed
+    main_menu.process_inputs([])  # needed
 
-print("press down and right")
-actions = [bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_DOWN), bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_RIGHT)]
-main_menu.process_inputs(actions)
+    print("press down and right")
+    actions = [bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_DOWN), bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_RIGHT)]
+    main_menu.process_inputs(actions)
 
-print("scrolling (should do nothing)")
-main_menu.scroll(True)
+    print("scrolling (should do nothing)")
+    main_menu.scroll(True)
 
-assertion("scroll position = 0", main_menu.scroll_position == 0)
-assertion("menu state = MENU_STATE_SELECTING", main_menu.get_state() == bombman.Menu.MENU_STATE_SELECTING)
-assertion("selected item = (1,0)", main_menu.get_selected_item() == (1, 0))
+    assertion("scroll position = 0", main_menu.scroll_position == 0)
+    assertion("menu state = MENU_STATE_SELECTING", main_menu.get_state() == bombman.Menu.MENU_STATE_SELECTING)
+    assertion("selected item = (1,0)", main_menu.get_selected_item() == (1, 0))
 
-print("press bomb")
-actions = [bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_BOMB)]
-main_menu.process_inputs(actions)
-assertion("menu state = MENU_STATE_CONFIRM", main_menu.get_state() == bombman.Menu.MENU_STATE_CONFIRM)
+    print("press bomb")
+    actions = [bombman.PlayerActions(0, bombman.PlayerKeyMaps.ACTION_BOMB)]
+    main_menu.process_inputs(actions)
+    assertion("menu state = MENU_STATE_CONFIRM", main_menu.get_state() == bombman.Menu.MENU_STATE_CONFIRM)
 
-print("init key map")
-key_maps = bombman.PlayerKeyMaps()
+    print("init key map")
+    key_maps = bombman.PlayerKeyMaps()
 
-print("set some keys")
-key_maps.set_one_key_map(pygame.K_a, 0, bombman.PlayerKeyMaps.ACTION_UP)
-key_maps.set_one_key_map(pygame.K_ESCAPE, 1, bombman.PlayerKeyMaps.ACTION_DOWN)
-key_maps.set_one_key_map(pygame.K_b, 0, bombman.PlayerKeyMaps.ACTION_BOMB)
-key_maps.set_one_key_map(pygame.K_c, 0, bombman.PlayerKeyMaps.ACTION_LEFT)
+    print("set some keys")
+    key_maps.set_one_key_map(pygame.K_a, 0, bombman.PlayerKeyMaps.ACTION_UP)
+    key_maps.set_one_key_map(pygame.K_ESCAPE, 1, bombman.PlayerKeyMaps.ACTION_DOWN)
+    key_maps.set_one_key_map(pygame.K_b, 0, bombman.PlayerKeyMaps.ACTION_BOMB)
+    key_maps.set_one_key_map(pygame.K_c, 0, bombman.PlayerKeyMaps.ACTION_LEFT)
 
-key_map0 = key_maps.get_players_key_mapping(0)
-key_map1 = key_maps.get_players_key_mapping(1)
+    key_map0 = key_maps.get_players_key_mapping(0)
+    key_map1 = key_maps.get_players_key_mapping(1)
 
-assertion("action up, player 0 = 'a'", key_map0[bombman.PlayerKeyMaps.ACTION_UP] == pygame.K_a)
-assertion("action left, player 0 = 'c'", key_map0[bombman.PlayerKeyMaps.ACTION_LEFT] == pygame.K_c)
-assertion("action left, player 1 = 'esc'", key_map1[bombman.PlayerKeyMaps.ACTION_DOWN] == pygame.K_ESCAPE)
+    assertion("action up, player 0 = 'a'", key_map0[bombman.PlayerKeyMaps.ACTION_UP] == pygame.K_a)
+    assertion("action left, player 0 = 'c'", key_map0[bombman.PlayerKeyMaps.ACTION_LEFT] == pygame.K_c)
+    assertion("action left, player 1 = 'esc'", key_map1[bombman.PlayerKeyMaps.ACTION_DOWN] == pygame.K_ESCAPE)
 
-print("init settings and set some values")
+    print("init settings and set some values")
 
-settings = bombman.Settings(key_maps)
-settings.player_key_maps.set_one_key_map(pygame.K_a, 0, bombman.PlayerKeyMaps.ACTION_UP)
+    settings = bombman.Settings(key_maps)
+    settings.player_key_maps.set_one_key_map(pygame.K_a, 0, bombman.PlayerKeyMaps.ACTION_UP)
 
-settings.music_volume = 0.3
-settings.sound_volume = 0
-settings.fullscreen = True
-settings.control_by_mouse = True
+    settings.music_volume = 0.3
+    settings.sound_volume = 0
+    settings.fullscreen = True
+    settings.control_by_mouse = True
 
-print("save and reload settings to/from string")
+    print("save and reload settings to/from string")
 
-settings_string = settings.save_to_string()
-settings.load_from_string(settings_string)
+    settings_string = settings.save_to_string()
+    settings.load_from_string(settings_string)
 
-assertion("music volume", settings.music_volume == 0.3)
-assertion("sound volume", settings.sound_volume == 0)
-assertion("music on", settings.music_is_on())
-assertion("sound off", not settings.sound_is_on())
-assertion("fullscreen", settings.fullscreen)
-assertion("mouse control", settings.control_by_mouse)
-assertion("key map - action up, player 0 = 'a'",
-          settings.player_key_maps.get_players_key_mapping(0)[bombman.PlayerKeyMaps.ACTION_UP] == pygame.K_a)
+    assertion("music volume", settings.music_volume == 0.3)
+    assertion("sound volume", settings.sound_volume == 0)
+    assertion("music on", settings.music_is_on())
+    assertion("sound off", not settings.sound_is_on())
+    assertion("fullscreen", settings.fullscreen)
+    assertion("mouse control", settings.control_by_mouse)
+    assertion("key map - action up, player 0 = 'a'",
+              settings.player_key_maps.get_players_key_mapping(0)[bombman.PlayerKeyMaps.ACTION_UP] == pygame.K_a)
 
 print("=====================")
 print("total errors: " + str(errors_total))
